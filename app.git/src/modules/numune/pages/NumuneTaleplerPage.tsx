@@ -1,0 +1,135 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical } from 'lucide-react';
+
+// Mock data
+const mockData = [
+  { id: 1, numuneNo: 'NM-26-0001', musteri: 'ABC Tekstil Ltd. Şti.', refNo: 'REF-2025-001', durum: 'Beklemede', termin: '15.03.2026', miktar: 50, gonderim: 'Kargo' },
+  { id: 2, numuneNo: 'NM-26-0002', musteri: 'XYZ Giyim A.Ş.', refNo: 'PO-456', durum: 'Üretimde', termin: '10.03.2026', miktar: 100, gonderim: 'Elden' },
+  { id: 3, numuneNo: 'NM-26-0003', musteri: 'Global Socks Inc.', refNo: '-', durum: 'Hazır', termin: '05.03.2026', miktar: 25, gonderim: 'Kurye' },
+  { id: 4, numuneNo: 'NM-26-0008', musteri: 'Premium Textile', refNo: 'PT-2025-333', durum: 'Beklemede', termin: '25.03.2026', miktar: 20, gonderim: 'Kurye' },
+  { id: 5, numuneNo: 'NM-26-0009', musteri: 'ABC Tekstil Ltd. Şti.', refNo: '-', durum: 'Üretimde', termin: '12.03.2026', miktar: 45, gonderim: 'Kargo' },
+  { id: 6, numuneNo: 'NM-26-0010', musteri: 'XYZ Giyim A.Ş.', refNo: 'PO-789', durum: 'Hazır', termin: '07.03.2026', miktar: 80, gonderim: 'Elden' },
+];
+
+export function NumuneTaleplerPage() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('Aktif');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  return (
+    <div className="container mx-auto p-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <button 
+              onClick={() => navigate('/numune')}
+              className="text-sm text-gray-500 mb-2 flex items-center gap-1 hover:text-gray-700"
+            >
+              <ArrowLeft size={16} /> Ana Menüye Dön
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Numune Listesi</h1>
+            <p className="text-gray-500 mt-1">Tüm numune taleplerinizi yönetin</p>
+          </div>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+              <BarChart3 size={18} /> Analiz
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+              <Download size={18} /> Excel
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm">
+              <Plus size={18} /> Yeni Numune Talebi
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="inline-flex bg-gray-100 p-1 rounded-lg mb-6">
+          {['Aktif', 'Gönderildi', 'Tamamlandı', 'İptal', 'Tümü'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === tab ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Numune no veya müşteri adı..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select className="border border-gray-300 rounded-lg px-4 py-2 bg-white">
+            <option>Tüm Durumlar</option>
+            <option>Beklemede</option>
+            <option>Üretimde</option>
+            <option>Hazır</option>
+          </select>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Numune No</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Müşteri</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Ref. No</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Durum</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Termin</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Miktar</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">Gönderim</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mockData.map(row => (
+                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-4 px-4 text-sm font-medium text-gray-900">{row.numuneNo}</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{row.musteri}</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{row.refNo}</td>
+                  <td className="py-4 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      row.durum === 'Beklemede' ? 'bg-yellow-100 text-yellow-800' :
+                      row.durum === 'Üretimde' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {row.durum}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{row.termin}</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{row.miktar} adet</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{row.gonderim}</td>
+                  <td className="py-4 px-4">
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <MoreVertical size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-4 text-sm text-gray-500">
+          Toplam {mockData.length} kayıt<br />
+          Toplam Miktar: {mockData.reduce((acc, curr) => acc + curr.miktar, 0)} adet
+        </div>
+      </div>
+    </div>
+  );
+}
