@@ -258,23 +258,23 @@ export function NumuneTaleplerPage() {
                         <MoreVertical size={18} />
                       </button>
                       {openMenuId === numune.id && (
-                        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                          {/* Durum Degistir - Submenu */}
-                          <div className="relative group">
+                        <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-[100]">
+                          {/* Durum Degistir - Submenu (Sola Acilir) */}
+                          <div className="relative">
                             <button 
                               onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
                             >
                               <span>Durum Değiştir</span>
-                              <ChevronRight size={14} />
+                              {openSubMenu === 'durum' ? <ChevronRight size={14} className="rotate-90" /> : <ChevronRight size={14} />}
                             </button>
                             {openSubMenu === 'durum' && (
-                              <div className="absolute left-full top-0 ml-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                              <div className="absolute right-full top-0 mr-1 w-40 bg-white border border-gray-200 rounded-lg shadow-xl z-[200]">
                                 {DURUM_OPTIONS.map(durum => (
                                   <button
                                     key={durum}
                                     onClick={() => handleDurumChange(numune.id, durum)}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
                                   >
                                     <span>{durum}</span>
                                     {numune.durum === durum && <Check size={14} className="text-green-600" />}
@@ -284,22 +284,22 @@ export function NumuneTaleplerPage() {
                             )}
                           </div>
                           
-                          {/* Gonderim Sekli Degistir - Submenu */}
-                          <div className="relative group">
+                          {/* Gonderim Sekli Degistir - Submenu (Sola Acilir) */}
+                          <div className="relative">
                             <button 
                               onClick={() => setOpenSubMenu(openSubMenu === 'gonderim' ? null : 'gonderim')}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between border-t border-gray-100"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between border-t border-gray-100 whitespace-nowrap"
                             >
                               <span>Gönderim Şekli Değiştir</span>
-                              <ChevronRight size={14} />
+                              {openSubMenu === 'gonderim' ? <ChevronRight size={14} className="rotate-90" /> : <ChevronRight size={14} />}
                             </button>
                             {openSubMenu === 'gonderim' && (
-                              <div className="absolute left-full top-0 ml-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                              <div className="absolute right-full top-0 mr-1 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-[200]">
                                 {GONDERIM_OPTIONS.map(gonderim => (
                                   <button
                                     key={gonderim}
                                     onClick={() => handleGonderimChange(numune.id, gonderim)}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
                                   >
                                     <span>{gonderim}</span>
                                     {numune.gonderim === gonderim && <Check size={14} className="text-green-600" />}
