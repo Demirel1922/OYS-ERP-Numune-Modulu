@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Check, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Eye, CheckCircle, Truck } from 'lucide-react';
 import { NumuneDetayModal } from '../components/NumuneDetayModal';
 
 interface NumuneItem {
@@ -41,7 +41,8 @@ export function NumuneTaleplerPage() {
   const [selectedNumuneId, setSelectedNumuneId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [openSubMenu, setOpenSubMenu] = useState<'durum' | 'gonderim' | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
@@ -53,31 +54,30 @@ export function NumuneTaleplerPage() {
     }
   }, []);
 
-  // Disari tiklama ile menüyü kapat
+  // ESC tuşu ile menüyü kapat
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         setOpenMenuId(null);
         setOpenSubMenu(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
   // DURUM DEGISTIRME - KESIN CALISMALI
   const handleDurumChange = (id: number, yeniDurum: string) => {
-    // State'i aninda guncelle (UI refresh)
     setNumuneler(prev => prev.map(n => n.id === id ? { ...n, durum: yeniDurum } : n));
     
-    // localStorage'i guncelle (kalici)
     const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
-    const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, durum: yeniDurum } : n);
+    const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, durum: yeniDurum, guncellemeTarihi: new Date().toISOString() } : n);
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     
     alert(`Durum "${yeniDurum}" olarak guncellendi`);
     setOpenMenuId(null);
     setOpenSubMenu(null);
+    setMenuPosition(null);
   };
 
   // GONDERIM SEKLI DEGISTIRME
@@ -91,6 +91,7 @@ export function NumuneTaleplerPage() {
     alert(`Gonderim "${yeniGonderim}" olarak guncellendi`);
     setOpenMenuId(null);
     setOpenSubMenu(null);
+    setMenuPosition(null);
   };
 
   // GORUNTULE (Modal Ac - Navigate YASAK)
@@ -98,11 +99,14 @@ export function NumuneTaleplerPage() {
     setSelectedNumuneId(id);
     setModalOpen(true);
     setOpenMenuId(null);
+    setOpenSubMenu(null);
+    setMenuPosition(null);
   };
 
   const handleEdit = (id: number) => {
     navigate('/numune/yeni', { state: { editMode: true, numuneId: id } });
     setOpenMenuId(null);
+    setMenuPosition(null);
   };
 
   const handleDelete = (id: number) => {
@@ -113,11 +117,26 @@ export function NumuneTaleplerPage() {
       setNumuneler(yeniListe);
     }
     setOpenMenuId(null);
+    setMenuPosition(null);
   };
 
   const toggleMenu = (id: number) => {
-    setOpenMenuId(openMenuId === id ? null : id);
-    setOpenSubMenu(null);
+    if (openMenuId === id) {
+      setOpenMenuId(null);
+      setOpenSubMenu(null);
+      setMenuPosition(null);
+    } else {
+      const button = buttonRefs.current.get(id);
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX - 180 // Sola kaydır
+        });
+      }
+      setOpenMenuId(id);
+      setOpenSubMenu(null);
+    }
   };
 
   const getDurumBadgeClass = (durum: string) => {
@@ -249,92 +268,19 @@ export function NumuneTaleplerPage() {
                       {numune.durum}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="relative" ref={openMenuId === numune.id ? menuRef : null}>
-                      <button 
-                        onClick={() => toggleMenu(numune.id)}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-                      {openMenuId === numune.id && (
-                        <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-[100]">
-                          {/* Durum Degistir - Submenu (Sola Acilir) */}
-                          <div className="relative">
-                            <button 
-                              onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
-                            >
-                              <span>Durum Değiştir</span>
-                              {openSubMenu === 'durum' ? <ChevronRight size={14} className="rotate-90" /> : <ChevronRight size={14} />}
-                            </button>
-                            {openSubMenu === 'durum' && (
-                              <div className="absolute right-full top-0 mr-1 w-40 bg-white border border-gray-200 rounded-lg shadow-xl z-[200]">
-                                {DURUM_OPTIONS.map(durum => (
-                                  <button
-                                    key={durum}
-                                    onClick={() => handleDurumChange(numune.id, durum)}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
-                                  >
-                                    <span>{durum}</span>
-                                    {numune.durum === durum && <Check size={14} className="text-green-600" />}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Gonderim Sekli Degistir - Submenu (Sola Acilir) */}
-                          <div className="relative">
-                            <button 
-                              onClick={() => setOpenSubMenu(openSubMenu === 'gonderim' ? null : 'gonderim')}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between border-t border-gray-100 whitespace-nowrap"
-                            >
-                              <span>Gönderim Şekli Değiştir</span>
-                              {openSubMenu === 'gonderim' ? <ChevronRight size={14} className="rotate-90" /> : <ChevronRight size={14} />}
-                            </button>
-                            {openSubMenu === 'gonderim' && (
-                              <div className="absolute right-full top-0 mr-1 w-32 bg-white border border-gray-200 rounded-lg shadow-xl z-[200]">
-                                {GONDERIM_OPTIONS.map(gonderim => (
-                                  <button
-                                    key={gonderim}
-                                    onClick={() => handleGonderimChange(numune.id, gonderim)}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between whitespace-nowrap"
-                                  >
-                                    <span>{gonderim}</span>
-                                    {numune.gonderim === gonderim && <Check size={14} className="text-green-600" />}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Goruntule - Modal Ac */}
-                          <button 
-                            onClick={() => openDetailModal(numune.id)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100"
-                          >
-                            <Eye size={14} /> Görüntüle
-                          </button>
-                          
-                          {/* Duzenle */}
-                          <button 
-                            onClick={() => handleEdit(numune.id)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100"
-                          >
-                            <Edit3 size={14} /> Düzenle
-                          </button>
-                          
-                          {/* Sil */}
-                          <button 
-                            onClick={() => handleDelete(numune.id)}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100"
-                          >
-                            <Trash2 size={14} /> Sil
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                  <td className="py-4 px-4 relative">
+                    <button 
+                      ref={(el) => {
+                        if (el) buttonRefs.current.set(numune.id, el);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMenu(numune.id);
+                      }}
+                      className="p-2 hover:bg-gray-200 rounded-full"
+                    >
+                      <MoreVertical size={20} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -347,6 +293,135 @@ export function NumuneTaleplerPage() {
           Toplam Miktar: {filteredNumuneler.reduce((acc, curr) => acc + curr.miktar, 0)} adet
         </div>
       </div>
+
+      {/* FIXED POSITION MENU - Ekran dışına taşmaz */}
+      {openMenuId !== null && menuPosition && (
+        <>
+          {/* Overlay - dışına tıklayınca kapat */}
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => {
+              setOpenMenuId(null);
+              setOpenSubMenu(null);
+              setMenuPosition(null);
+            }} 
+          />
+          
+          {/* Ana Menü - Fixed position */}
+          <div 
+            className="fixed z-[9999] w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            {/* Görüntüle */}
+            <button 
+              onClick={() => openDetailModal(openMenuId)}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm whitespace-nowrap"
+            >
+              <Eye size={18} className="text-blue-600" />
+              Görüntüle
+            </button>
+
+            {/* Durum Değiştir - Submenu */}
+            <div className="relative">
+              <button 
+                onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between text-sm whitespace-nowrap"
+              >
+                <span className="flex items-center gap-3">
+                  <CheckCircle size={18} className="text-green-600" />
+                  Durum Değiştir
+                </span>
+                <ChevronRight size={16} className={openSubMenu === 'durum' ? 'rotate-90' : ''} />
+              </button>
+              
+              {/* Submenu - Sola doğru açılan */}
+              {openSubMenu === 'durum' && (
+                <div 
+                  className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+                  style={{ 
+                    top: menuPosition.top + 45, 
+                    left: menuPosition.left - 165 
+                  }}
+                >
+                  {DURUM_OPTIONS.map(durum => {
+                    const numune = numuneler.find(n => n.id === openMenuId);
+                    return (
+                      <button
+                        key={durum}
+                        onClick={() => handleDurumChange(openMenuId, durum)}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 text-sm whitespace-nowrap ${
+                          numune?.durum === durum ? 'bg-blue-50 font-bold' : ''
+                        }`}
+                      >
+                        {durum} {numune?.durum === durum && '✓'}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Gönderim Şekli */}
+            <div className="relative">
+              <button 
+                onClick={() => setOpenSubMenu(openSubMenu === 'gonderim' ? null : 'gonderim')}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between text-sm whitespace-nowrap"
+              >
+                <span className="flex items-center gap-3">
+                  <Truck size={18} className="text-orange-600" />
+                  Gönderim Şekli
+                </span>
+                <ChevronRight size={16} className={openSubMenu === 'gonderim' ? 'rotate-90' : ''} />
+              </button>
+              
+              {openSubMenu === 'gonderim' && (
+                <div 
+                  className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+                  style={{ 
+                    top: menuPosition.top + 90, 
+                    left: menuPosition.left - 165 
+                  }}
+                >
+                  {GONDERIM_OPTIONS.map(gonderim => {
+                    const numune = numuneler.find(n => n.id === openMenuId);
+                    return (
+                      <button
+                        key={gonderim}
+                        onClick={() => handleGonderimChange(openMenuId, gonderim)}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 text-sm whitespace-nowrap ${
+                          numune?.gonderim === gonderim ? 'bg-blue-50 font-bold' : ''
+                        }`}
+                      >
+                        {gonderim}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <hr className="my-2 mx-4" />
+
+            {/* Düzenle */}
+            <button 
+              onClick={() => handleEdit(openMenuId)}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm whitespace-nowrap"
+            >
+              <Edit3 size={18} className="text-gray-600" />
+              Düzenle
+            </button>
+
+            {/* Sil */}
+            <button 
+              onClick={() => handleDelete(openMenuId)}
+              className="w-full px-4 py-3 text-left hover:bg-red-50 text-red-600 flex items-center gap-3 text-sm whitespace-nowrap"
+            >
+              <Trash2 size={18} />
+              Sil
+            </button>
+          </div>
+        </>
+      )}
 
       <NumuneDetayModal 
         isOpen={modalOpen} 

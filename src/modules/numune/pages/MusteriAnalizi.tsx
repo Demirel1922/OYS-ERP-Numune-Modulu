@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowLeft, Search, Filter, Mail, ChevronUp, ChevronDown, MoreVertical, RotateCcw, Eye } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Mail, ChevronUp, ChevronDown, ChevronRight, MoreVertical, RotateCcw, Eye, CheckCircle } from 'lucide-react';
 import { NumuneDetayModal } from '../components/NumuneDetayModal';
 
 interface NumuneItem {
@@ -47,6 +47,8 @@ const NUMUNE_TIPI_OPTIONS = [
   { value: 'TEST_NUMUNESI', label: 'Test Numunesi' }
 ];
 
+const DURUM_OPTIONS = ['Taslak', 'Beklemede', 'Üretimde', 'Hazır', 'Gönderildi', 'Tamamlandı', 'İptal'];
+
 const mockData: NumuneItem[] = [
   { id: 1, numuneNo: '55A1', musteri: 'ABC Tekstil', musteriKodu: 'ABC001', musteriArtikelNo: 'ART-001', refNo: 'REF-2025-001', durum: 'Beklemede', termin: '2026-03-15', miktar: 50, gonderim: 'Kargo', numuneTipi: 'İlk Geliştirme', olusturmaTarihi: '2025-01-10' },
   { id: 2, numuneNo: '55A2', musteri: 'XYZ Giyim', musteriKodu: 'XYZ002', musteriArtikelNo: 'ART-002', refNo: 'PO-456', durum: 'Üretimde', termin: '2026-03-10', miktar: 100, gonderim: 'Elden', numuneTipi: 'Boy Seti', olusturmaTarihi: '2025-01-12' },
@@ -55,8 +57,6 @@ const mockData: NumuneItem[] = [
   { id: 5, numuneNo: '55A5', musteri: 'ABC Tekstil', musteriKodu: 'ABC001', musteriArtikelNo: 'ART-005', refNo: '-', durum: 'Üretimde', termin: '2026-03-12', miktar: 45, gonderim: 'Kargo', numuneTipi: 'Production', olusturmaTarihi: '2025-01-20' },
   { id: 6, numuneNo: '55A6', musteri: 'XYZ Giyim', musteriKodu: 'XYZ002', musteriArtikelNo: 'ART-006', refNo: 'PO-789', durum: 'Hazır', termin: '2026-03-07', miktar: 80, gonderim: 'Elden', numuneTipi: 'Fuar Numunesi', olusturmaTarihi: '2025-01-22' },
 ];
-
-
 
 export function MusteriAnalizi() {
   const navigate = useNavigate();
@@ -70,9 +70,11 @@ export function MusteriAnalizi() {
   const [sortField, setSortField] = useState<SortField>('termin');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [openSubMenu, setOpenSubMenu] = useState<'durum' | 'gonderim' | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   // Load data from localStorage
   useEffect(() => {
@@ -87,15 +89,16 @@ export function MusteriAnalizi() {
     }
   }, []);
 
-  // Disari tiklama ile menüyü kapat
+  // ESC tuşu ile menüyü kapat
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         setOpenMenuId(null);
+        setOpenSubMenu(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
   // Get unique customers for dropdown
@@ -172,7 +175,7 @@ export function MusteriAnalizi() {
     return Object.entries(grouped)
       .map(([ay, count]) => ({ ay, count }))
       .sort((a, b) => a.ay.localeCompare(b.ay))
-      .slice(-6); // Son 6 ay
+      .slice(-6);
   }, [filteredData]);
 
   const musteriData = useMemo(() => {
@@ -187,11 +190,42 @@ export function MusteriAnalizi() {
       .slice(0, 10);
   }, [numuneListesi]);
 
+  // DURUM DEGISTIRME
+  const handleDurumChange = (id: number, yeniDurum: string) => {
+    const updated = numuneListesi.map(n => n.id === id ? { ...n, durum: yeniDurum } : n);
+    setNumuneListesi(updated);
+    localStorage.setItem('oys_numune_listesi', JSON.stringify(updated));
+    setOpenMenuId(null);
+    setOpenSubMenu(null);
+    setMenuPosition(null);
+  };
+
   // MODAL AC
   const openDetail = (id: number) => {
     setSelectedId(id);
     setModalOpen(true);
     setOpenMenuId(null);
+    setOpenSubMenu(null);
+    setMenuPosition(null);
+  };
+
+  const toggleMenu = (id: number) => {
+    if (openMenuId === id) {
+      setOpenMenuId(null);
+      setOpenSubMenu(null);
+      setMenuPosition(null);
+    } else {
+      const button = buttonRefs.current.get(id);
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX - 180
+        });
+      }
+      setOpenMenuId(id);
+      setOpenSubMenu(null);
+    }
   };
 
   const handleSort = (field: SortField) => {
@@ -235,6 +269,7 @@ Best regards,`;
     
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setOpenMenuId(null);
+    setMenuPosition(null);
   };
 
   const getSortIcon = (field: SortField) => {
@@ -481,34 +516,16 @@ Best regards,`;
                       {row.durum}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="relative" ref={openMenuId === row.id ? menuRef : null}>
-                      <button 
-                        onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-                      {openMenuId === row.id && (
-                        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                          {/* Goruntule - Modal Ac */}
-                          <button 
-                            onClick={() => openDetail(row.id)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                          >
-                            <Eye size={14} /> Görüntüle
-                          </button>
-                          
-                          {/* E-posta Gonder */}
-                          <button 
-                            onClick={() => handleEmail(row)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100"
-                          >
-                            <Mail size={14} /> E-posta Gönder
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                  <td className="py-4 px-4 relative">
+                    <button 
+                      ref={(el) => {
+                        if (el) buttonRefs.current.set(row.id, el);
+                      }}
+                      onClick={() => toggleMenu(row.id)}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -522,6 +539,80 @@ Best regards,`;
           </div>
         )}
       </div>
+
+      {/* FIXED POSITION MENU */}
+      {openMenuId !== null && menuPosition && (
+        <>
+          <div 
+            className="fixed inset-0 z-[9998]" 
+            onClick={() => {
+              setOpenMenuId(null);
+              setOpenSubMenu(null);
+              setMenuPosition(null);
+            }} 
+          />
+          
+          <div 
+            className="fixed z-[9999] w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            <button 
+              onClick={() => openDetail(openMenuId)}
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+            >
+              <Eye size={16} className="text-blue-600" /> Görüntüle
+            </button>
+            
+            {/* Durum Değiştir Submenu */}
+            <div className="relative">
+              <button 
+                onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center whitespace-nowrap"
+              >
+                <span className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-600" /> Durum Değiştir
+                </span>
+                <ChevronRight size={16} className={openSubMenu === 'durum' ? 'rotate-90' : ''} />
+              </button>
+              
+              {openSubMenu === 'durum' && (
+                <div 
+                  className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+                  style={{ 
+                    top: menuPosition.top + 40, 
+                    left: menuPosition.left - 165 
+                  }}
+                >
+                  {DURUM_OPTIONS.map(d => {
+                    const numune = numuneListesi.find(n => n.id === openMenuId);
+                    return (
+                      <button 
+                        key={d} 
+                        onClick={() => handleDurumChange(openMenuId, d)} 
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 text-sm whitespace-nowrap ${
+                          numune?.durum === d ? 'bg-blue-50 font-bold' : ''
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => {
+                const numune = numuneListesi.find(n => n.id === openMenuId);
+                if (numune) handleEmail(numune);
+              }}
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap border-t border-gray-100"
+            >
+              <Mail size={16} className="text-green-600" /> E-posta Gönder
+            </button>
+          </div>
+        </>
+      )}
 
       {/* MODAL */}
       <NumuneDetayModal 
