@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical, Users } from 'lucide-react';
 
-// Mock data
-const mockData = [
+interface NumuneItem {
+  id: number;
+  numuneNo: string;
+  musteri: string;
+  refNo: string;
+  durum: string;
+  termin: string;
+  miktar: number;
+  gonderim: string;
+}
+
+const mockData: NumuneItem[] = [
   { id: 1, numuneNo: 'NM-26-0001', musteri: 'ABC Tekstil Ltd. Şti.', refNo: 'REF-2025-001', durum: 'Beklemede', termin: '15.03.2026', miktar: 50, gonderim: 'Kargo' },
   { id: 2, numuneNo: 'NM-26-0002', musteri: 'XYZ Giyim A.Ş.', refNo: 'PO-456', durum: 'Üretimde', termin: '10.03.2026', miktar: 100, gonderim: 'Elden' },
   { id: 3, numuneNo: 'NM-26-0003', musteri: 'Global Socks Inc.', refNo: '-', durum: 'Hazır', termin: '05.03.2026', miktar: 25, gonderim: 'Kurye' },
@@ -16,14 +26,33 @@ export function NumuneTaleplerPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Aktif');
   const [searchTerm, setSearchTerm] = useState('');
+  const [numuneListesi, setNumuneListesi] = useState<NumuneItem[]>(mockData);
 
-  const handleExcelExport = () => {
-    console.log('Excel export başlatıldı');
-  };
+  // localStorage'dan numune listesini yükle
+  useEffect(() => {
+    const storedList = localStorage.getItem('oys_numune_listesi');
+    if (storedList) {
+      const parsedList = JSON.parse(storedList);
+      // Yeni eklenenler başta olacak şekilde birleştir
+      setNumuneListesi([...parsedList, ...mockData]);
+    }
+  }, []);
+
+  // Sayfa focus olduğunda güncelle (navigate sonrası)
+  useEffect(() => {
+    const handleFocus = () => {
+      const storedList = localStorage.getItem('oys_numune_listesi');
+      if (storedList) {
+        const parsedList = JSON.parse(storedList);
+        setNumuneListesi([...parsedList, ...mockData]);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   return (
     <div className="container mx-auto p-6">
-      {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -37,11 +66,14 @@ export function NumuneTaleplerPage() {
             <p className="text-gray-500 mt-1">Tüm numune taleplerinizi yönetin</p>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+            <button 
+              onClick={() => console.log('Analiz triggered')}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
               <BarChart3 size={18} /> Analiz
             </button>
             <button 
-              onClick={() => {}}
+              onClick={() => alert('Müşteri Analizi modülü yakında aktif olacak')}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
             >
               <Users size={18} /> Müşteri Analizi
@@ -55,7 +87,6 @@ export function NumuneTaleplerPage() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="inline-flex bg-gray-100 p-1 rounded-lg mb-6">
           {['Aktif', 'Gönderildi', 'Tamamlandı', 'İptal', 'Tümü'].map(tab => (
             <button
@@ -70,7 +101,6 @@ export function NumuneTaleplerPage() {
           ))}
         </div>
 
-        {/* Filters - Excel butonu en sağda */}
         <div className="flex gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
@@ -89,14 +119,13 @@ export function NumuneTaleplerPage() {
             <option>Hazır</option>
           </select>
           <button 
-            onClick={handleExcelExport}
+            onClick={() => console.log('Excel export triggered')}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
           >
             <Download size={16} /> Excel İndir
           </button>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -112,7 +141,7 @@ export function NumuneTaleplerPage() {
               </tr>
             </thead>
             <tbody>
-              {mockData.map(row => (
+              {numuneListesi.map(row => (
                 <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-4 px-4 text-sm font-medium text-gray-900">{row.numuneNo}</td>
                   <td className="py-4 px-4 text-sm text-gray-600">{row.musteri}</td>
@@ -140,10 +169,9 @@ export function NumuneTaleplerPage() {
           </table>
         </div>
 
-        {/* Footer */}
         <div className="mt-4 text-sm text-gray-500">
-          Toplam {mockData.length} kayıt<br />
-          Toplam Miktar: {mockData.reduce((acc, curr) => acc + curr.miktar, 0)} adet
+          Toplam {numuneListesi.length} kayıt<br />
+          Toplam Miktar: {numuneListesi.reduce((acc, curr) => acc + curr.miktar, 0)} adet
         </div>
       </div>
     </div>
