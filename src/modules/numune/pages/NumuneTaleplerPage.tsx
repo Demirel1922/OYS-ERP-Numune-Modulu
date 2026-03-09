@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical, Users } from 'lucide-react';
 
 // Mock data
 const mockData = [
@@ -16,6 +16,10 @@ export function NumuneTaleplerPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Aktif');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleExcelExport = () => {
+    console.log('Excel export başlatıldı');
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -36,11 +40,17 @@ export function NumuneTaleplerPage() {
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
               <BarChart3 size={18} /> Analiz
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-              <Download size={18} /> Excel
+            <button 
+              onClick={() => {}}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              <Users size={18} /> Müşteri Analizi
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm">
-              <Plus size={18} /> Yeni Numune Talebi
+            <button 
+              onClick={() => navigate('/numune/yeni')}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+            >
+              <Plus size={18} /> Yeni Numune
             </button>
           </div>
         </div>
@@ -60,7 +70,7 @@ export function NumuneTaleplerPage() {
           ))}
         </div>
 
-        {/* Filters */}
+        {/* Filters - Excel butonu en sağda */}
         <div className="flex gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
@@ -78,6 +88,12 @@ export function NumuneTaleplerPage() {
             <option>Üretimde</option>
             <option>Hazır</option>
           </select>
+          <button 
+            onClick={handleExcelExport}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+          >
+            <Download size={16} /> Excel İndir
+          </button>
         </div>
 
         {/* Table */}
