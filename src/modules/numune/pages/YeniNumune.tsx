@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, CheckCircle, Plus, Trash2, Loader2, X, Check } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Save, CheckCircle, Plus, Trash2, Loader2, X, Check, Edit3 } from 'lucide-react';
 
 interface MeasurementRow {
   id: number;
@@ -48,6 +48,52 @@ const CINSIYET_OPTIONS = [
 const BEDEN_OPTIONS = ['36-40', '40-44', 'Standart', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 const YIKAMA_OPTIONS = ['Var', 'Yok', 'Hafif', 'Sert'];
+
+const DOKUSU_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: 'DUZ', label: 'Düz' },
+  { value: 'HAVLU', label: 'Havlu' },
+  { value: 'YARIM_HAVLU', label: 'Yarım Havlu' },
+  { value: 'TEKNIK_HAVLU', label: 'Teknik Havlu' },
+  { value: 'SECMELI_HAVLU', label: 'Seçmeli Havlu' },
+  { value: 'DERBILI', label: 'Derbili' }
+];
+
+const TIP_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: 'PATIK', label: 'Patik' },
+  { value: 'KISA_KONC', label: 'Kısa Konç' },
+  { value: 'NORMAL_KONC', label: 'Normal Konç' },
+  { value: 'CETIK', label: 'Çetik' },
+  { value: 'DIZALTI', label: 'Dizaltı' },
+  { value: 'DIZUSTU', label: 'Dizüstü' },
+  { value: 'KULOTLU', label: 'Külotlu Çorap' }
+];
+
+const SEBEP_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: 'MUSTERI_TALEBI', label: 'Müşteri talebi' },
+  { value: 'SATIS_EKIBI_TALEBI', label: 'Satış ekibi talebi' },
+  { value: 'FUAR_SONRASI', label: 'Fuar sonrası talep' },
+  { value: 'YENI_KOLEKSIYON', label: 'Yeni koleksiyon geliştirme' },
+  { value: 'MEVCUT_REVIZE', label: 'Mevcut ürünün revizesi' },
+  { value: 'KALITE_PROBLEMI', label: 'Kalite problemi sonrası yeniden numune' }
+];
+
+const NUMUNE_TIPI_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: 'ILK_GELISTIRME', label: 'İlk Geliştirme Numunesi' },
+  { value: 'BOY_SETI', label: 'Boy Seti' },
+  { value: 'RENK_SETI', label: 'Renk Seti' },
+  { value: 'KALITE_NUMUNESI', label: 'Kalite numunesi' },
+  { value: 'PREPRODUCTION', label: 'Preproduction sample' },
+  { value: 'PRODUCTION', label: 'Production sample' },
+  { value: 'SALESMAN', label: 'Salesman Sample' },
+  { value: 'FUAR_NUMUNESI', label: 'Fuar numunesi' },
+  { value: 'REVIZE_NUMUNE', label: 'Revize Numune' },
+  { value: 'REFERANS_NUMUNE', label: 'Referans numune' },
+  { value: 'TEST_NUMUNESI', label: 'Test numunesi' }
+];
 
 // Numune No üretim fonksiyonu
 const generateNumuneNo = (cinsiyetKodu: string): string => {
@@ -99,58 +145,93 @@ const getInitialDesenRow = (id: number, num: number): YarnRow => ({
   id, kullanimYeri: 'DESEN İPLİĞİ', detay: `Desen ${num}`, denye: '', cins: '', renkKodu: '', renk: '', tedarikci: '', not: '', isFixed: false
 });
 
+const initialFormData = {
+  generalInfo: {
+    numuneNo: '',
+    cinsiyet: '',
+    numuneTipi: '',
+    sebep: '',
+    musteriKodu: '',
+    musteriArtikelKodu: '',
+    musteriMarkasi: '',
+    numuneyiTalepEden: '',
+    yikama: '',
+    burunDikisi: '',
+    igneSayisi: '',
+    kovanCapi: '',
+    formaBilgisi: '',
+    formaSekli: '',
+    corapDokusu: '',
+    corapTipi: '',
+    olcuSekli: '',
+    corapTanimi: '',
+    deseneVerilisTarihi: '',
+    hedefTarih: '',
+    beden: '',
+    renk: '',
+    miktar: 1,
+    aciklama: ''
+  },
+  measurements: [{ id: 1, bedenler: '', lastikEni: '', lastikYuksekligi: '', koncEni: '', ayakEni: '', koncBoyu: '', tabanBoyu: '', lastikStreci: '', koncStreciAyakStreci: '', topukStreci: '', bord: '' }] as MeasurementRow[],
+  yarnInfo: [...getFixedYarnRows(), getInitialDesenRow(19, 1)] as YarnRow[],
+  desenCount: 1
+};
+
 export function YeniNumune() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'general' | 'measurements' | 'yarn'>('general');
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<Toast>({ show: false, message: '', type: 'success' });
   const [status, setStatus] = useState<'TASLAK' | 'ONAYDA' | 'ONAYLI'>('TASLAK');
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   
-  const [formData, setFormData] = useState({
-    generalInfo: {
-      numuneNo: '',
-      cinsiyet: '',
-      musteriKoduArtikel: '',
-      numuneyiTalepEden: '',
-      yikama: '',
-      burunDikisi: '',
-      igneSayisiKovanCapi: '',
-      formaBilgisi: '',
-      corapOzellikleri: '',
-      formaSekli: '',
-      olcuSekli: '',
-      corapTanimi: '',
-      hedefTarih: '',
-      beden: '',
-      renk: '',
-      miktar: 1,
-      aciklama: '',
-      deseneVerilisTarihi: ''
-    },
-    measurements: [{ id: 1, bedenler: '', lastikEni: '', lastikYuksekligi: '', koncEni: '', ayakEni: '', koncBoyu: '', tabanBoyu: '', lastikStreci: '', koncStreciAyakStreci: '', topukStreci: '', bord: '' }] as MeasurementRow[],
-    yarnInfo: [...getFixedYarnRows(), getInitialDesenRow(19, 1)] as YarnRow[],
-    desenCount: 1
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type }), 3000);
   }, []);
 
-  // LocalStorage'dan yükleme
+  // Edit modu kontrolü
   useEffect(() => {
-    const saved = localStorage.getItem('yeniNumune_formData');
-    const savedTime = localStorage.getItem('yeniNumune_lastSaved');
-    if (saved) {
-      const confirmLoad = window.confirm('Önceki kaydınızı geri yüklemek ister misiniz?');
-      if (confirmLoad) {
-        setFormData(JSON.parse(saved));
-        if (savedTime) setLastSaved(savedTime);
-        showToast('Önceki kayıt yüklendi', 'info');
+    if (location.state?.editMode && location.state?.numuneId) {
+      setIsEditMode(true);
+      setEditId(location.state.numuneId);
+      
+      const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
+      const bulunan = liste.find((n: any) => n.id === location.state.numuneId);
+      if (bulunan) {
+        setFormData(prev => ({
+          ...prev,
+          generalInfo: { ...prev.generalInfo, ...bulunan.generalInfo, numuneNo: bulunan.numuneNo },
+          measurements: bulunan.measurements || prev.measurements,
+          yarnInfo: bulunan.yarnInfo || prev.yarnInfo,
+          desenCount: bulunan.desenCount || 1
+        }));
+        setStatus(bulunan.durum || 'TASLAK');
+        showToast('Düzenleme modu aktif', 'info');
       }
     }
-  }, [showToast]);
+  }, [location, showToast]);
+
+  // LocalStorage'dan yükleme (sadece yeni kayıt için)
+  useEffect(() => {
+    if (!isEditMode) {
+      const saved = localStorage.getItem('yeniNumune_formData');
+      const savedTime = localStorage.getItem('yeniNumune_lastSaved');
+      if (saved) {
+        const confirmLoad = window.confirm('Önceki kaydınızı geri yüklemek ister misiniz?');
+        if (confirmLoad) {
+          setFormData(JSON.parse(saved));
+          if (savedTime) setLastSaved(savedTime);
+          showToast('Önceki kayıt yüklendi', 'info');
+        }
+      }
+    }
+  }, [isEditMode, showToast]);
 
   // Otomatik kaydetme (30 saniyede bir)
   useEffect(() => {
@@ -164,14 +245,14 @@ export function YeniNumune() {
 
   // Cinsiyet değişince Numune No güncelle
   useEffect(() => {
-    if (formData.generalInfo.cinsiyet) {
+    if (formData.generalInfo.cinsiyet && !isEditMode) {
       const newNumuneNo = generateNumuneNo(formData.generalInfo.cinsiyet);
       setFormData(prev => ({
         ...prev,
         generalInfo: { ...prev.generalInfo, numuneNo: newNumuneNo }
       }));
     }
-  }, [formData.generalInfo.cinsiyet]);
+  }, [formData.generalInfo.cinsiyet, isEditMode]);
 
   const handleGeneralChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -242,7 +323,7 @@ export function YeniNumune() {
   const isGeneralInfoComplete = () => {
     const g = formData.generalInfo;
     return g.cinsiyet?.trim() &&
-           g.musteriKoduArtikel?.trim() &&
+           g.musteriKodu?.trim() &&
            g.numuneyiTalepEden?.trim() &&
            g.hedefTarih &&
            g.beden?.trim() &&
@@ -269,7 +350,7 @@ export function YeniNumune() {
     const g = formData.generalInfo;
     const missing = [];
     if (!g.cinsiyet?.trim()) missing.push('Cinsiyet');
-    if (!g.musteriKoduArtikel?.trim()) missing.push('Müşteri Kodu');
+    if (!g.musteriKodu?.trim()) missing.push('Müşteri Kodu');
     if (!g.numuneyiTalepEden?.trim()) missing.push('Talep Eden');
     if (!g.hedefTarih) missing.push('Hedef Tarih');
     if (!g.beden?.trim()) missing.push('Beden');
@@ -298,7 +379,7 @@ export function YeniNumune() {
   const validate = () => {
     const g = formData.generalInfo;
     if (!g.cinsiyet?.trim()) { showToast('Cinsiyet zorunludur', 'error'); return false; }
-    if (!g.musteriKoduArtikel?.trim()) { showToast('Müşteri Kodu / Artikel zorunludur', 'error'); return false; }
+    if (!g.musteriKodu?.trim()) { showToast('Müşteri Kodu zorunludur', 'error'); return false; }
     if (!g.numuneyiTalepEden?.trim()) { showToast('Numuneyi Talep Eden zorunludur', 'error'); return false; }
     if (!g.hedefTarih) { showToast('Hedef Tarih zorunludur', 'error'); return false; }
     if (!g.beden?.trim()) { showToast('Beden zorunludur', 'error'); return false; }
@@ -332,44 +413,84 @@ export function YeniNumune() {
     if (!validate()) return;
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 500));
+    
+    const yeniNumune = {
+      id: isEditMode ? editId : Date.now(),
+      numuneNo: formData.generalInfo.numuneNo,
+      musteri: formData.generalInfo.musteriKodu,
+      refNo: '-',
+      durum: 'TASLAK',
+      termin: formData.generalInfo.hedefTarih,
+      miktar: formData.generalInfo.miktar,
+      gonderim: '-',
+      generalInfo: formData.generalInfo,
+      measurements: formData.measurements,
+      yarnInfo: formData.yarnInfo,
+      desenCount: formData.desenCount,
+      olusturmaTarihi: new Date().toISOString()
+    };
+    
+    const mevcutListe = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
+    let yeniListe;
+    
+    if (isEditMode) {
+      yeniListe = mevcutListe.map((n: any) => n.id === editId ? yeniNumune : n);
+    } else {
+      yeniListe = [yeniNumune, ...mevcutListe];
+    }
+    
+    localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     setStatus('TASLAK');
-    localStorage.setItem('yeniNumune_formData', JSON.stringify(formData));
-    localStorage.setItem('yeniNumune_lastSaved', new Date().toISOString());
-    setLastSaved(new Date().toISOString());
-    showToast('Taslak olarak kaydedildi', 'success');
+    localStorage.removeItem('yeniNumune_formData');
+    localStorage.removeItem('yeniNumune_lastSaved');
+    showToast(isEditMode ? 'Güncellendi' : 'Taslak olarak kaydedildi', 'success');
     setIsSaving(false);
+    
+    navigate('/numune/talepler', { state: { refresh: true } });
   };
 
   const handleSaveAndApprove = async () => {
     if (!validate()) return;
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 500));
-    if (formData.generalInfo.numuneNo) {
+    
+    if (formData.generalInfo.numuneNo && !isEditMode) {
       saveSira(formData.generalInfo.numuneNo);
     }
     
-    // Yeni numune'yi listeye ekle
     const yeniNumune = {
-      id: Date.now(),
+      id: isEditMode ? editId : Date.now(),
       numuneNo: formData.generalInfo.numuneNo,
-      musteri: formData.generalInfo.musteriKoduArtikel,
+      musteri: formData.generalInfo.musteriKodu,
       refNo: '-',
-      durum: 'Beklemede',
+      durum: 'ONAYDA',
       termin: formData.generalInfo.hedefTarih,
       miktar: formData.generalInfo.miktar,
-      gonderim: '-'
+      gonderim: '-',
+      generalInfo: formData.generalInfo,
+      measurements: formData.measurements,
+      yarnInfo: formData.yarnInfo,
+      desenCount: formData.desenCount,
+      olusturmaTarihi: new Date().toISOString()
     };
     
     const mevcutListe = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
-    const yeniListe = [yeniNumune, ...mevcutListe];
-    localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
+    let yeniListe;
     
+    if (isEditMode) {
+      yeniListe = mevcutListe.map((n: any) => n.id === editId ? yeniNumune : n);
+    } else {
+      yeniListe = [yeniNumune, ...mevcutListe];
+    }
+    
+    localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     setStatus('ONAYDA');
     localStorage.removeItem('yeniNumune_formData');
     localStorage.removeItem('yeniNumune_lastSaved');
-    showToast('Kaydedildi ve Onaylandı', 'success');
+    showToast(isEditMode ? 'Güncellendi ve Onaylandı' : 'Kaydedildi ve Onaylandı', 'success');
     setIsSaving(false);
-    setTimeout(() => navigate('/numune/talepler'), 1000);
+    
+    navigate('/numune/talepler', { state: { refresh: true } });
   };
 
   const getStatusBadgeColor = () => {
@@ -400,8 +521,8 @@ export function YeniNumune() {
             <button onClick={() => navigate(-1)} className="text-sm text-gray-500 mb-2 flex items-center gap-1 hover:text-gray-700">
               <ArrowLeft size={16} /> Geri
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Yeni Numune</h1>
-            <p className="text-gray-500 mt-1">Yeni bir numune oluşturun</p>
+            <h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Numune Düzenle' : 'Yeni Numune'}</h1>
+            <p className="text-gray-500 mt-1">{isEditMode ? 'Mevcut numuneyi düzenleyin' : 'Yeni bir numune oluşturun'}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor()}`}>
@@ -413,10 +534,12 @@ export function YeniNumune() {
               </span>
             )}
             <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50">
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Kaydet
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : isEditMode ? <Edit3 size={18} /> : <Save size={18} />} 
+              {isEditMode ? 'Güncelle' : 'Kaydet'}
             </button>
             <button onClick={handleSaveAndApprove} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />} Kaydet & Onayla
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />} 
+              {isEditMode ? 'Güncelle & Onayla' : 'Kaydet & Onayla'}
             </button>
           </div>
         </div>
@@ -437,6 +560,7 @@ export function YeniNumune() {
         {/* Genel Bilgiler */}
         {activeTab === 'general' && (
           <div className="space-y-4">
+            {/* Satır 1: Cinsiyet, Numune No, Numune Tipi */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cinsiyet *</label>
@@ -450,11 +574,21 @@ export function YeniNumune() {
                 <input type="text" disabled value={formData.generalInfo.numuneNo} placeholder="Cinsiyet seçince otomatik oluşur" className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Kodu / Artikel *</label>
-                <input type="text" value={formData.generalInfo.musteriKoduArtikel} onChange={(e) => handleGeneralChange('musteriKoduArtikel', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Numune Tipi</label>
+                <select value={formData.generalInfo.numuneTipi} onChange={(e) => handleGeneralChange('numuneTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                  {NUMUNE_TIPI_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
             </div>
+
+            {/* Satır 2: Sebep, Talep Eden */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Numunenin Sebebi</label>
+                <select value={formData.generalInfo.sebep} onChange={(e) => handleGeneralChange('sebep', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                  {SEBEP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numuneyi Talep Eden *</label>
                 <input type="text" value={formData.generalInfo.numuneyiTalepEden} onChange={(e) => handleGeneralChange('numuneyiTalepEden', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
@@ -466,30 +600,70 @@ export function YeniNumune() {
                   {YIKAMA_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
+            </div>
+
+            {/* Satır 3: Müşteri Bilgileri (3'lü) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Kodu *</label>
+                <input type="text" value={formData.generalInfo.musteriKodu} onChange={(e) => handleGeneralChange('musteriKodu', e.target.value)} placeholder="Müşteri kodunu girin" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Artikel Kodu</label>
+                <input type="text" value={formData.generalInfo.musteriArtikelKodu} onChange={(e) => handleGeneralChange('musteriArtikelKodu', e.target.value)} placeholder="Artikel no girin" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Markası</label>
+                <input type="text" value={formData.generalInfo.musteriMarkasi} onChange={(e) => handleGeneralChange('musteriMarkasi', e.target.value)} placeholder="Marka adı" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+              </div>
+            </div>
+
+            {/* Satır 4: İğne Sayısı, Kovan Çapı (ayrı) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">İğne Sayısı</label>
+                <input type="number" value={formData.generalInfo.igneSayisi} onChange={(e) => handleGeneralChange('igneSayisi', e.target.value)} placeholder="örn: 168" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kovan Çapı</label>
+                <input type="number" step="0.1" value={formData.generalInfo.kovanCapi} onChange={(e) => handleGeneralChange('kovanCapi', e.target.value)} placeholder="örn: 3.5" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Burun Dikişi</label>
                 <input type="text" value={formData.generalInfo.burunDikisi} onChange={(e) => handleGeneralChange('burunDikisi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">İğne Sayısı / Kovan Çapı</label>
-                <input type="text" value={formData.generalInfo.igneSayisiKovanCapi} onChange={(e) => handleGeneralChange('igneSayisiKovanCapi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
-              </div>
+
+            {/* Satır 5: Forma Bilgisi, Forma Şekli (bitişik) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Forma Bilgisi</label>
                 <input type="text" value={formData.generalInfo.formaBilgisi} onChange={(e) => handleGeneralChange('formaBilgisi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Özellikleri</label>
-                <input type="text" value={formData.generalInfo.corapOzellikleri} onChange={(e) => handleGeneralChange('corapOzellikleri', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Forma Şekli</label>
                 <input type="text" value={formData.generalInfo.formaSekli} onChange={(e) => handleGeneralChange('formaSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
               </div>
+            </div>
+
+            {/* Satır 6: Çorap Dokusu, Çorap Tipi (2 select) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Dokusu</label>
+                <select value={formData.generalInfo.corapDokusu} onChange={(e) => handleGeneralChange('corapDokusu', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                  {DOKUSU_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tipi</label>
+                <select value={formData.generalInfo.corapTipi} onChange={(e) => handleGeneralChange('corapTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                  {TIP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Satır 7: Ölçü Şekli, Çorap Tanımı */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ölçü Şekli</label>
                 <input type="text" value={formData.generalInfo.olcuSekli} onChange={(e) => handleGeneralChange('olcuSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
@@ -499,6 +673,8 @@ export function YeniNumune() {
                 <textarea value={formData.generalInfo.corapTanimi} onChange={(e) => handleGeneralChange('corapTanimi', e.target.value)} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
               </div>
             </div>
+
+            {/* Satır 8: Desene Veriliş Tarihi (üstte), Hedef Tarih (altta) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Desene Veriliş Tarihi</label>
@@ -516,6 +692,8 @@ export function YeniNumune() {
                 </select>
               </div>
             </div>
+
+            {/* Satır 9: Renk, Miktar */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Renk *</label>
@@ -526,6 +704,8 @@ export function YeniNumune() {
                 <input type="number" min={1} value={formData.generalInfo.miktar} onChange={(e) => handleGeneralChange('miktar', parseInt(e.target.value) || 1)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
               </div>
             </div>
+
+            {/* Satır 10: Açıklama */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
               <textarea value={formData.generalInfo.aciklama} onChange={(e) => handleGeneralChange('aciklama', e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />

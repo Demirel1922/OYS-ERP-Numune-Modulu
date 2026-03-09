@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical, Users } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Plus, Download, BarChart3, Search, MoreVertical, Users, Edit3, Trash2 } from 'lucide-react';
 
 interface NumuneItem {
   id: number;
@@ -24,32 +24,80 @@ const mockData: NumuneItem[] = [
 
 export function NumuneTaleplerPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('Aktif');
   const [searchTerm, setSearchTerm] = useState('');
   const [numuneListesi, setNumuneListesi] = useState<NumuneItem[]>(mockData);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // localStorage'dan numune listesini yükle
-  useEffect(() => {
+  const loadData = () => {
     const storedList = localStorage.getItem('oys_numune_listesi');
     if (storedList) {
       const parsedList = JSON.parse(storedList);
-      // Yeni eklenenler başta olacak şekilde birleştir
       setNumuneListesi([...parsedList, ...mockData]);
+    } else {
+      setNumuneListesi(mockData);
     }
-  }, []);
+  };
 
-  // Sayfa focus olduğunda güncelle (navigate sonrası)
+  useEffect(() => {
+    loadData();
+    
+    // YeniNumune'dan gelen state kontrolü
+    if (location.state?.refresh) {
+      loadData();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  // Sayfa focus olduğunda güncelle
   useEffect(() => {
     const handleFocus = () => {
-      const storedList = localStorage.getItem('oys_numune_listesi');
-      if (storedList) {
-        const parsedList = JSON.parse(storedList);
-        setNumuneListesi([...parsedList, ...mockData]);
-      }
+      loadData();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  // Storage event listener (diğer sekmeler için)
+  useEffect(() => {
+    const handleStorage = () => {
+      loadData();
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Dışarı tıklama ile menüyü kapat
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleEdit = (id: number) => {
+    navigate('/numune/yeni', { state: { editMode: true, numuneId: id } });
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm('Bu numuneyi silmek istediğinize emin misiniz?')) {
+      const mevcutListe = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
+      const yeniListe = mevcutListe.filter((n: any) => n.id !== id);
+      localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
+      loadData();
+    }
+    setOpenMenuId(null);
+  };
+
+  const toggleMenu = (id: number) => {
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -150,6 +198,7 @@ export function NumuneTaleplerPage() {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       row.durum === 'Beklemede' ? 'bg-yellow-100 text-yellow-800' :
                       row.durum === 'Üretimde' ? 'bg-blue-100 text-blue-800' :
+                      row.durum === 'ONAYDA' ? 'bg-orange-100 text-orange-800' :
                       'bg-green-100 text-green-800'
                     }`}>
                       {row.durum}
@@ -159,9 +208,30 @@ export function NumuneTaleplerPage() {
                   <td className="py-4 px-4 text-sm text-gray-600">{row.miktar} adet</td>
                   <td className="py-4 px-4 text-sm text-gray-600">{row.gonderim}</td>
                   <td className="py-4 px-4">
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreVertical size={18} />
-                    </button>
+                    <div className="relative" ref={openMenuId === row.id ? menuRef : null}>
+                      <button 
+                        onClick={() => toggleMenu(row.id)}
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+                      {openMenuId === row.id && (
+                        <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          <button 
+                            onClick={() => handleEdit(row.id)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <Edit3 size={14} /> Düzenle
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(row.id)}
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Sil
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
