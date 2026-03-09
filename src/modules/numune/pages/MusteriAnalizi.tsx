@@ -70,11 +70,10 @@ export function MusteriAnalizi() {
   const [sortField, setSortField] = useState<SortField>('termin');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-  const [openSubMenu, setOpenSubMenu] = useState<'durum' | 'gonderim' | null>(null);
+  const [openSubMenu, setOpenSubMenu] = useState<'durum' | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-  const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const menuButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   // Load data from localStorage
   useEffect(() => {
@@ -197,7 +196,6 @@ export function MusteriAnalizi() {
     localStorage.setItem('oys_numune_listesi', JSON.stringify(updated));
     setOpenMenuId(null);
     setOpenSubMenu(null);
-    setMenuPosition(null);
   };
 
   // MODAL AC
@@ -206,23 +204,14 @@ export function MusteriAnalizi() {
     setModalOpen(true);
     setOpenMenuId(null);
     setOpenSubMenu(null);
-    setMenuPosition(null);
   };
 
   const toggleMenu = (id: number) => {
+    console.log("Menu toggle:", id, "current:", openMenuId);
     if (openMenuId === id) {
       setOpenMenuId(null);
       setOpenSubMenu(null);
-      setMenuPosition(null);
     } else {
-      const button = buttonRefs.current.get(id);
-      if (button) {
-        const rect = button.getBoundingClientRect();
-        setMenuPosition({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX - 180
-        });
-      }
       setOpenMenuId(id);
       setOpenSubMenu(null);
     }
@@ -269,7 +258,6 @@ Best regards,`;
     
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setOpenMenuId(null);
-    setMenuPosition(null);
   };
 
   const getSortIcon = (field: SortField) => {
@@ -519,13 +507,78 @@ Best regards,`;
                   <td className="py-4 px-4 relative">
                     <button 
                       ref={(el) => {
-                        if (el) buttonRefs.current.set(row.id, el);
+                        if (el) menuButtonRefs.current.set(row.id, el);
                       }}
-                      onClick={() => toggleMenu(row.id)}
-                      className="text-gray-400 hover:text-gray-600 p-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Tiklandi:", row.id);
+                        toggleMenu(row.id);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-colors"
                     >
                       <MoreVertical size={18} />
                     </button>
+                    
+                    {/* MENÜ - Absolute position ile td içinde */}
+                    {openMenuId === row.id && (
+                      <>
+                        {/* Overlay */}
+                        <div 
+                          className="fixed inset-0 z-[9998]" 
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            setOpenSubMenu(null);
+                          }} 
+                        />
+                        
+                        {/* Ana Menü */}
+                        <div className="absolute right-4 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[9999]">
+                          <button 
+                            onClick={() => openDetail(row.id)}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+                          >
+                            <Eye size={16} className="text-blue-600" /> Görüntüle
+                          </button>
+                          
+                          {/* Durum Değiştir */}
+                          <div className="relative">
+                            <button 
+                              onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center whitespace-nowrap"
+                            >
+                              <span className="flex items-center gap-2">
+                                <CheckCircle size={16} className="text-green-600" /> Durum Değiştir
+                              </span>
+                              <ChevronRight size={16} className={openSubMenu === 'durum' ? 'rotate-90' : ''} />
+                            </button>
+                            
+                            {/* Submenü - Aşağıya doğru açılan */}
+                            {openSubMenu === 'durum' && (
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[10000]">
+                                {DURUM_OPTIONS.map(d => (
+                                  <button 
+                                    key={d} 
+                                    onClick={() => handleDurumChange(row.id, d)} 
+                                    className={`w-full px-4 py-2 text-left hover:bg-gray-100 text-sm whitespace-nowrap ${
+                                      row.durum === d ? 'bg-blue-50 font-bold' : ''
+                                    }`}
+                                  >
+                                    {d} {row.durum === d && '✓'}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <button 
+                            onClick={() => handleEmail(row)}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap border-t border-gray-100"
+                          >
+                            <Mail size={16} className="text-green-600" /> E-posta Gönder
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -539,80 +592,6 @@ Best regards,`;
           </div>
         )}
       </div>
-
-      {/* FIXED POSITION MENU */}
-      {openMenuId !== null && menuPosition && (
-        <>
-          <div 
-            className="fixed inset-0 z-[9998]" 
-            onClick={() => {
-              setOpenMenuId(null);
-              setOpenSubMenu(null);
-              setMenuPosition(null);
-            }} 
-          />
-          
-          <div 
-            className="fixed z-[9999] w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
-            style={{ top: menuPosition.top, left: menuPosition.left }}
-          >
-            <button 
-              onClick={() => openDetail(openMenuId)}
-              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
-            >
-              <Eye size={16} className="text-blue-600" /> Görüntüle
-            </button>
-            
-            {/* Durum Değiştir Submenu */}
-            <div className="relative">
-              <button 
-                onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex justify-between items-center whitespace-nowrap"
-              >
-                <span className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-600" /> Durum Değiştir
-                </span>
-                <ChevronRight size={16} className={openSubMenu === 'durum' ? 'rotate-90' : ''} />
-              </button>
-              
-              {openSubMenu === 'durum' && (
-                <div 
-                  className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
-                  style={{ 
-                    top: menuPosition.top + 40, 
-                    left: menuPosition.left - 165 
-                  }}
-                >
-                  {DURUM_OPTIONS.map(d => {
-                    const numune = numuneListesi.find(n => n.id === openMenuId);
-                    return (
-                      <button 
-                        key={d} 
-                        onClick={() => handleDurumChange(openMenuId, d)} 
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-100 text-sm whitespace-nowrap ${
-                          numune?.durum === d ? 'bg-blue-50 font-bold' : ''
-                        }`}
-                      >
-                        {d}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <button 
-              onClick={() => {
-                const numune = numuneListesi.find(n => n.id === openMenuId);
-                if (numune) handleEmail(numune);
-              }}
-              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap border-t border-gray-100"
-            >
-              <Mail size={16} className="text-green-600" /> E-posta Gönder
-            </button>
-          </div>
-        </>
-      )}
 
       {/* MODAL */}
       <NumuneDetayModal 
