@@ -532,7 +532,7 @@ export function YeniNumune() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-4">
       {/* Toast */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
@@ -544,183 +544,165 @@ export function YeniNumune() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         {/* Üst Bilgi */}
-        <div className="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
+        <div className="flex justify-between items-start mb-4 border-b border-gray-200 pb-3">
           <div>
-            <button onClick={() => navigate(-1)} className="text-sm text-gray-500 mb-2 flex items-center gap-1 hover:text-gray-700">
-              <ArrowLeft size={16} /> Geri
+            <button onClick={() => navigate(-1)} className="text-sm text-gray-500 mb-1 flex items-center gap-1 hover:text-gray-700">
+              <ArrowLeft size={14} /> Geri
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">{isEditMode ? 'Numune Düzenle' : 'Yeni Numune'}</h1>
-            <p className="text-gray-500 mt-1">{isEditMode ? 'Mevcut numuneyi düzenleyin' : 'Yeni bir numune oluşturun'}</p>
+            <h1 className="text-xl font-bold text-gray-900">{isEditMode ? 'Numune Düzenle' : 'Yeni Numune'}</h1>
+            <p className="text-gray-500 text-sm">{isEditMode ? 'Mevcut numuneyi düzenleyin' : 'Yeni bir numune oluşturun'}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor()}`}>
-              Durum: {status}
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor()}`}>
+              {status}
             </span>
             {lastSaved && (
               <span className="text-xs text-gray-400">
-                Son kayıt: {new Date(lastSaved).toLocaleTimeString()}
+                {new Date(lastSaved).toLocaleTimeString()}
               </span>
             )}
-            <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50">
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : isEditMode ? <Edit3 size={18} /> : <Save size={18} />} 
+            <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 text-sm">
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : isEditMode ? <Edit3 size={14} /> : <Save size={14} />} 
               {isEditMode ? 'Güncelle' : 'Kaydet'}
             </button>
-            <button onClick={handleSaveAndApprove} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />} 
+            <button onClick={handleSaveAndApprove} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} 
               {isEditMode ? 'Güncelle & Onayla' : 'Kaydet & Onayla'}
             </button>
           </div>
         </div>
 
         {/* Sekmeler */}
-        <div className="flex border-b border-gray-200 mb-6">
-          <button onClick={() => handleTabClick('general')} className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+        <div className="flex border-b border-gray-200 mb-4">
+          <button onClick={() => handleTabClick('general')} className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             Genel Bilgiler
           </button>
-          <button onClick={() => handleTabClick('measurements')} className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'measurements' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'} ${!canAccessMeasurements ? 'opacity-50' : ''}`}>
+          <button onClick={() => handleTabClick('measurements')} className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 ${activeTab === 'measurements' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'} ${!canAccessMeasurements ? 'opacity-50' : ''}`}>
             Ölçüler
           </button>
-          <button onClick={() => handleTabClick('yarn')} className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'yarn' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'} ${!canAccessYarn ? 'opacity-50' : ''}`}>
+          <button onClick={() => handleTabClick('yarn')} className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 ${activeTab === 'yarn' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'} ${!canAccessYarn ? 'opacity-50' : ''}`}>
             İplik Bilgileri
           </button>
         </div>
 
         {/* Genel Bilgiler */}
         {activeTab === 'general' && (
-          <div className="space-y-4">
-            {/* Satır 1: Numune No */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            {/* Satır 1-2: Numune No ve Cinsiyet */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numune No</label>
-                <input type="text" disabled value={formData.generalInfo.numuneNo} placeholder="Cinsiyet seçince otomatik oluşur" className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600" />
+                <input type="text" disabled value={formData.generalInfo.numuneNo} placeholder="Cinsiyet seçince otomatik oluşur" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 bg-gray-100 text-gray-600 text-sm" />
               </div>
-            </div>
-
-            {/* Satır 2: Cinsiyet */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cinsiyet *</label>
-                <select value={formData.generalInfo.cinsiyet} onChange={(e) => handleGeneralChange('cinsiyet', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.cinsiyet} onChange={(e) => handleGeneralChange('cinsiyet', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   <option value="">Seçiniz</option>
                   {CINSIYET_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </div>
 
-            {/* Satır 3: Numune Tipi */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Satır 3-4: Numune Tipi ve Sebep */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numune Tipi *</label>
-                <select value={formData.generalInfo.numuneTipi} onChange={(e) => handleGeneralChange('numuneTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.numuneTipi} onChange={(e) => handleGeneralChange('numuneTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   {NUMUNE_TIPI_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
-            </div>
-
-            {/* Satır 4: Numunenin Sebebi */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numunenin Sebebi *</label>
-                <select value={formData.generalInfo.sebep} onChange={(e) => handleGeneralChange('sebep', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.sebep} onChange={(e) => handleGeneralChange('sebep', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   {SEBEP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </div>
 
             {/* Satır 5: Müşteri Bilgileri (3'lü) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Kodu *</label>
-                <input type="text" value={formData.generalInfo.musteriKodu} onChange={(e) => handleGeneralChange('musteriKodu', e.target.value)} placeholder="Müşteri kodu" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.musteriKodu} onChange={(e) => handleGeneralChange('musteriKodu', e.target.value)} placeholder="Müşteri kodu" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Artikel Kodu</label>
-                <input type="text" value={formData.generalInfo.musteriArtikelKodu} onChange={(e) => handleGeneralChange('musteriArtikelKodu', e.target.value)} placeholder="Artikel no" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.musteriArtikelKodu} onChange={(e) => handleGeneralChange('musteriArtikelKodu', e.target.value)} placeholder="Artikel no" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Markası</label>
-                <input type="text" value={formData.generalInfo.musteriMarkasi} onChange={(e) => handleGeneralChange('musteriMarkasi', e.target.value)} placeholder="Marka adı" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.musteriMarkasi} onChange={(e) => handleGeneralChange('musteriMarkasi', e.target.value)} placeholder="Marka adı" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
             </div>
 
-            {/* Satır 6: Çorap Tipi ve Dokusu */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Satır 6-7: Çorap Tipi, Dokusu, İğne, Kovan */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tipi</label>
-                <select value={formData.generalInfo.corapTipi} onChange={(e) => handleGeneralChange('corapTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.corapTipi} onChange={(e) => handleGeneralChange('corapTipi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   {CORAP_TIPI_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Dokusu</label>
-                <select value={formData.generalInfo.corapDokusu} onChange={(e) => handleGeneralChange('corapDokusu', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.corapDokusu} onChange={(e) => handleGeneralChange('corapDokusu', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   {CORAP_DOKUSU_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
-            </div>
-
-            {/* Satır 7: İğne Sayısı ve Kovan Çapı */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">İğne Sayısı</label>
-                <input type="number" value={formData.generalInfo.igneSayisi} onChange={(e) => handleGeneralChange('igneSayisi', e.target.value)} placeholder="örn: 168" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="number" value={formData.generalInfo.igneSayisi} onChange={(e) => handleGeneralChange('igneSayisi', e.target.value)} placeholder="örn: 168" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kovan Çapı</label>
-                <input type="number" step="0.1" value={formData.generalInfo.kovanCapi} onChange={(e) => handleGeneralChange('kovanCapi', e.target.value)} placeholder="örn: 3.5" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="number" step="0.1" value={formData.generalInfo.kovanCapi} onChange={(e) => handleGeneralChange('kovanCapi', e.target.value)} placeholder="örn: 3.5" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
             </div>
 
-            {/* Satır 8: Forma Bilgisi ve Forma Şekli (bitişik) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Satır 8: Forma Bilgisi ve Forma Şekli */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Forma Bilgisi</label>
-                <input type="text" value={formData.generalInfo.formaBilgisi} onChange={(e) => handleGeneralChange('formaBilgisi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.formaBilgisi} onChange={(e) => handleGeneralChange('formaBilgisi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Forma Şekli</label>
-                <input type="text" value={formData.generalInfo.formaSekli} onChange={(e) => handleGeneralChange('formaSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.formaSekli} onChange={(e) => handleGeneralChange('formaSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
             </div>
 
-            {/* Satır 9: Yıkama */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Satır 9-10: Yıkama ve Ölçü Şekli */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Yıkama</label>
-                <select value={formData.generalInfo.yikama} onChange={(e) => handleGeneralChange('yikama', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900">
+                <select value={formData.generalInfo.yikama} onChange={(e) => handleGeneralChange('yikama', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
                   <option value="">Seçiniz</option>
                   {YIKAMA_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
-            </div>
-
-            {/* Satır 10: Ölçü Şekli */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ölçü Şekli</label>
-                <input type="text" value={formData.generalInfo.olcuSekli} onChange={(e) => handleGeneralChange('olcuSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="text" value={formData.generalInfo.olcuSekli} onChange={(e) => handleGeneralChange('olcuSekli', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
             </div>
 
             {/* Satır 11: Çorap Tanımı */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tanımı</label>
-                <textarea value={formData.generalInfo.corapTanimi} onChange={(e) => handleGeneralChange('corapTanimi', e.target.value)} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tanımı</label>
+              <textarea value={formData.generalInfo.corapTanimi} onChange={(e) => handleGeneralChange('corapTanimi', e.target.value)} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
             </div>
 
-            {/* Satır 12: Tarihler (Desene Veriliş üstte, Hedef altta) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Satır 12: Tarihler */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Desene Veriliş Tarihi (Talep Edilen Tarih)</label>
-                <input type="date" value={formData.generalInfo.deseneVerilisTarihi} onChange={(e) => handleGeneralChange('deseneVerilisTarihi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Desene Veriliş Tarihi</label>
+                <input type="date" value={formData.generalInfo.deseneVerilisTarihi} onChange={(e) => handleGeneralChange('deseneVerilisTarihi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hedef Tarih *</label>
-                <input type="date" value={formData.generalInfo.hedefTarih} onChange={(e) => handleGeneralChange('hedefTarih', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                <input type="date" value={formData.generalInfo.hedefTarih} onChange={(e) => handleGeneralChange('hedefTarih', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
               </div>
             </div>
           </div>
@@ -729,56 +711,56 @@ export function YeniNumune() {
         {/* Ölçüler */}
         {activeTab === 'measurements' && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Ölçü Tablosu</h3>
-              <button onClick={addMeasurementRow} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                <Plus size={16} /> Yeni Beden Ekle
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base font-semibold">Ölçü Tablosu</h3>
+              <button onClick={addMeasurementRow} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                <Plus size={14} /> Yeni Beden Ekle
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-200">
+              <table className="w-full text-xs border border-gray-200">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">İşlem</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[100px]">Bedenler *</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Renk *</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Lastik Eni</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[100px]">Lastik Yüksekliği</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Konç Eni</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Ayak Eni</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Konç Boyu</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Taban Boyu</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Lastik Streçi</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[120px]">Konç Streçi / Ayak Streçi</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Topuk Streçi</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[60px]">Bord</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Miktar *</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Birim</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-10"></th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-20">Bedenler *</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Renk *</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Lst.Eni</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Lst.Yük.</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Kç.Eni</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Ay.Eni</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Kç.Boy</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Tb.Boy</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Lst.Str.</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Kç/Ay.Str.</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Tp.Str.</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-12">Bord</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Miktar *</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Birim</th>
                   </tr>
                 </thead>
                 <tbody>
                   {formData.measurements.map((row, idx) => (
                     <tr key={row.id} className="border-b border-gray-100">
-                      <td className="px-2 py-1">
-                        <button onClick={() => removeMeasurementRow(idx)} className="text-red-500 hover:text-red-700 p-1">
-                          <Trash2 size={16} />
+                      <td className="px-1 py-0.5">
+                        <button onClick={() => removeMeasurementRow(idx)} className="text-red-500 hover:text-red-700 p-0.5">
+                          <Trash2 size={14} />
                         </button>
                       </td>
-                      <td className="px-2 py-1"><input type="text" value={row.bedenler} onChange={(e) => handleMeasurementChange(idx, 'bedenler', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.renk} onChange={(e) => handleMeasurementChange(idx, 'renk', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.lastikEni} onChange={(e) => handleMeasurementChange(idx, 'lastikEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.lastikYuksekligi} onChange={(e) => handleMeasurementChange(idx, 'lastikYuksekligi', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.koncEni} onChange={(e) => handleMeasurementChange(idx, 'koncEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.ayakEni} onChange={(e) => handleMeasurementChange(idx, 'ayakEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.koncBoyu} onChange={(e) => handleMeasurementChange(idx, 'koncBoyu', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.tabanBoyu} onChange={(e) => handleMeasurementChange(idx, 'tabanBoyu', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.lastikStreci} onChange={(e) => handleMeasurementChange(idx, 'lastikStreci', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.koncStreciAyakStreci} onChange={(e) => handleMeasurementChange(idx, 'koncStreciAyakStreci', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.topukStreci} onChange={(e) => handleMeasurementChange(idx, 'topukStreci', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.bord} onChange={(e) => handleMeasurementChange(idx, 'bord', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="number" min={1} value={row.miktar} onChange={(e) => handleMeasurementChange(idx, 'miktar', parseInt(e.target.value) || 1)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1">
-                        <select value={row.birim} onChange={(e) => handleMeasurementChange(idx, 'birim', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                      <td className="px-1 py-0.5"><input type="text" value={row.bedenler} onChange={(e) => handleMeasurementChange(idx, 'bedenler', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.renk} onChange={(e) => handleMeasurementChange(idx, 'renk', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.lastikEni} onChange={(e) => handleMeasurementChange(idx, 'lastikEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.lastikYuksekligi} onChange={(e) => handleMeasurementChange(idx, 'lastikYuksekligi', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.koncEni} onChange={(e) => handleMeasurementChange(idx, 'koncEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.ayakEni} onChange={(e) => handleMeasurementChange(idx, 'ayakEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.koncBoyu} onChange={(e) => handleMeasurementChange(idx, 'koncBoyu', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.tabanBoyu} onChange={(e) => handleMeasurementChange(idx, 'tabanBoyu', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.lastikStreci} onChange={(e) => handleMeasurementChange(idx, 'lastikStreci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.koncStreciAyakStreci} onChange={(e) => handleMeasurementChange(idx, 'koncStreciAyakStreci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.topukStreci} onChange={(e) => handleMeasurementChange(idx, 'topukStreci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.bord} onChange={(e) => handleMeasurementChange(idx, 'bord', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="number" min={1} value={row.miktar} onChange={(e) => handleMeasurementChange(idx, 'miktar', parseInt(e.target.value) || 1)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5">
+                        <select value={row.birim} onChange={(e) => handleMeasurementChange(idx, 'birim', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs">
                           {BIRIM_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                       </td>
@@ -793,49 +775,50 @@ export function YeniNumune() {
         {/* İplik Bilgileri */}
         {activeTab === 'yarn' && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">İplik Bilgileri</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base font-semibold">İplik Bilgileri</h3>
               <button 
                 onClick={addDesenRow} 
                 disabled={formData.desenCount >= 10} 
                 title={formData.desenCount >= 10 ? 'Maksimum 10 desen eklenebilir' : ''}
-                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus size={16} /> Desen Ekle ({formData.desenCount}/10)
+                <Plus size={14} /> Desen Ekle ({formData.desenCount}/10)
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-gray-200">
+              <table className="w-full text-xs border border-gray-200">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[140px]">İpliğin Kullanım Yeri</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[140px]">Detay</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[60px]">Denye</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Cins</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Renk Kodu</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">Renk</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[100px]">Tedarikçi</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[120px]">Not</th>
-                    <th className="px-2 py-2 text-left font-medium text-gray-700 min-w-[60px]">İşlem</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-28">Kullanım Yeri</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-28">Detay</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-14">Denye</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Cins</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Renk Kodu</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Renk</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-20">Tedarikçi</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-24">Not</th>
                   </tr>
                 </thead>
                 <tbody>
                   {formData.yarnInfo.map((row, idx) => (
                     <tr key={row.id} className="border-b border-gray-100">
-                      <td className="px-2 py-1 text-gray-600 font-medium">{row.kullanimYeri}</td>
-                      <td className="px-2 py-1 text-gray-600">{row.detay}</td>
-                      <td className="px-2 py-1"><input type="text" value={row.denye} onChange={(e) => handleYarnChange(idx, 'denye', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.cins} onChange={(e) => handleYarnChange(idx, 'cins', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.renkKodu} onChange={(e) => handleYarnChange(idx, 'renkKodu', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.renk} onChange={(e) => handleYarnChange(idx, 'renk', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.tedarikci} onChange={(e) => handleYarnChange(idx, 'tedarikci', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1"><input type="text" value={row.not} onChange={(e) => handleYarnChange(idx, 'not', e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" /></td>
-                      <td className="px-2 py-1">
-                        {!row.isFixed && (
-                          <button onClick={() => removeDesenRow(idx)} className="text-red-500 hover:text-red-700 p-1">
-                            <Trash2 size={16} />
-                          </button>
-                        )}
+                      <td className="px-1 py-0.5 text-gray-600 font-medium text-xs">{row.kullanimYeri}</td>
+                      <td className="px-1 py-0.5 text-gray-600 text-xs">{row.detay}</td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.denye} onChange={(e) => handleYarnChange(idx, 'denye', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.cins} onChange={(e) => handleYarnChange(idx, 'cins', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.renkKodu} onChange={(e) => handleYarnChange(idx, 'renkKodu', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.renk} onChange={(e) => handleYarnChange(idx, 'renk', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" value={row.tedarikci} onChange={(e) => handleYarnChange(idx, 'tedarikci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5">
+                        <div className="flex items-center gap-1">
+                          <input type="text" value={row.not} onChange={(e) => handleYarnChange(idx, 'not', e.target.value)} className="flex-1 border border-gray-300 rounded px-1.5 py-0.5 text-xs" />
+                          {!row.isFixed && (
+                            <button onClick={() => removeDesenRow(idx)} className="text-red-500 hover:text-red-700 p-0.5 flex-shrink-0" title="Deseni Sil">
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
