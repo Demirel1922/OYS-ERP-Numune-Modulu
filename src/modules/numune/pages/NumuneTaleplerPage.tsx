@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Eye, CheckCircle, Truck } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Eye, CheckCircle, Truck, X, Check } from 'lucide-react';
 import { NumuneDetayModal } from '../components/NumuneDetayModal';
 
 interface NumuneItem {
@@ -42,7 +42,13 @@ export function NumuneTaleplerPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [openSubMenu, setOpenSubMenu] = useState<'durum' | 'gonderim' | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'success' });
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  }, []);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
@@ -74,7 +80,7 @@ export function NumuneTaleplerPage() {
     const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, durum: yeniDurum, guncellemeTarihi: new Date().toISOString() } : n);
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     
-    alert(`Durum "${yeniDurum}" olarak guncellendi`);
+    showToast(`Durum "${yeniDurum}" olarak güncellendi`, 'success');
     setOpenMenuId(null);
     setOpenSubMenu(null);
     setMenuPosition(null);
@@ -88,7 +94,7 @@ export function NumuneTaleplerPage() {
     const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, gonderim: yeniGonderim, gonderimSekli: yeniGonderim } : n);
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     
-    alert(`Gonderim "${yeniGonderim}" olarak guncellendi`);
+    showToast(`Gönderim "${yeniGonderim}" olarak güncellendi`, 'success');
     setOpenMenuId(null);
     setOpenSubMenu(null);
     setMenuPosition(null);
@@ -167,6 +173,16 @@ export function NumuneTaleplerPage() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Toast */}
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-[99999] px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-all ${
+          toast.type === 'success' ? 'bg-green-600 text-white' :
+          toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
+        }`}>
+          {toast.type === 'success' ? <Check size={16} /> : toast.type === 'error' ? <X size={16} /> : <Check size={16} />}
+          <span className="text-sm">{toast.message}</span>
+        </div>
+      )}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex justify-between items-start mb-6">
           <div>

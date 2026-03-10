@@ -21,6 +21,19 @@ interface MeasurementRow {
   bord?: string;
 }
 
+interface YarnRow {
+  id: number;
+  kullanimYeri: string;
+  detay: string;
+  denye: string;
+  cins: string;
+  renkKodu: string;
+  renk: string;
+  tedarikci: string;
+  not: string;
+  isFixed: boolean;
+}
+
 interface NumuneData {
   id: number;
   numuneNo: string;
@@ -51,6 +64,8 @@ interface NumuneData {
   corapTanimi?: string;
   measurements?: MeasurementRow[];
   olculer?: MeasurementRow[];
+  yarnInfo?: YarnRow[];
+  generalInfo?: Record<string, string>;
 }
 
 interface NumuneDetayModalProps {
@@ -66,68 +81,258 @@ export function NumuneDetayModal({ isOpen, onClose, numuneId }: NumuneDetayModal
     if (isOpen && numuneId) {
       const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
       const bulunan = liste.find((n: NumuneData) => n.id === numuneId);
-      setData(bulunan || null);
+      if (bulunan) {
+        // YeniNumune sayfasından kaydedilen veriler generalInfo nested objesi içinde olabilir.
+        // Flat hale getiriyoruz ki modal tüm alanları düzgün okusun.
+        const generalInfo = bulunan.generalInfo || {};
+        const merged: NumuneData = {
+          ...bulunan,
+          musteriKodu: bulunan.musteriKodu || generalInfo.musteriKodu,
+          musteriArtikelKodu: bulunan.musteriArtikelKodu || generalInfo.musteriArtikelKodu,
+          musteriMarkasi: bulunan.musteriMarkasi || generalInfo.musteriMarkasi,
+          cinsiyet: bulunan.cinsiyet || generalInfo.cinsiyet,
+          numuneTipi: bulunan.numuneTipi || generalInfo.numuneTipi,
+          numuneninSebebi: bulunan.numuneninSebebi || generalInfo.sebep,
+          corapTipi: bulunan.corapTipi || generalInfo.corapTipi,
+          corapDokusu: bulunan.corapDokusu || generalInfo.corapDokusu,
+          igneSayisi: bulunan.igneSayisi || generalInfo.igneSayisi,
+          kovanCapi: bulunan.kovanCapi || generalInfo.kovanCapi,
+          hedefTarih: bulunan.hedefTarih || generalInfo.hedefTarih,
+          deseneVerilisTarihi: bulunan.deseneVerilisTarihi || generalInfo.deseneVerilisTarihi,
+          formaBilgisi: bulunan.formaBilgisi || generalInfo.formaBilgisi,
+          formaSekli: bulunan.formaSekli || generalInfo.formaSekli,
+          yikama: bulunan.yikama || generalInfo.yikama,
+          olcuSekli: bulunan.olcuSekli || generalInfo.olcuSekli,
+          corapTanimi: bulunan.corapTanimi || generalInfo.corapTanimi,
+          measurements: bulunan.measurements || [],
+          yarnInfo: bulunan.yarnInfo || [],
+        };
+        setData(merged);
+      } else {
+        setData(null);
+      }
     }
   }, [isOpen, numuneId]);
 
   if (!isOpen || !data) return null;
 
   const generatePDF = () => {
-    // DİKEY (portrait) format - YASAK: landscape
+    // Türkçe karakter normalize fonksiyonu (jsPDF Helvetica UTF-8 desteklemez)
+    const tr = (s?: string | null): string => {
+      if (!s) return '-';
+      return s
+        .replace(/ş/g, 's').replace(/Ş/g, 'S')
+        .replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+        .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+        .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+        .replace(/ç/g, 'c').replace(/Ç/g, 'C')
+        .replace(/ı/g, 'i').replace(/İ/g, 'I');
+    };
+
     const doc = new jsPDF('p', 'mm', 'a4');
-    
-    doc.setFontSize(16);
-    doc.text("SAMPLE SPECIFICATION", 105, 20, { align: "center" });
-    
-    // Genel Bilgiler Tablosu - Bilingual
+    const PW = 210; // A4 genislik
+    const ML = 8;   // sol margin
+    const MR = 8;   // sag margin
+    const CW = PW - ML - MR; // kullanilabilir genislik = 194mm
+
+    // ─── BAŞLIK ─────────────────────────────────────────────
+    doc.setFillColor(30, 64, 175);
+    doc.rect(ML, 6, CW, 10, 'F');
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('NUMUNE TALEP FORMU / SAMPLE REQUEST FORM', PW / 2, 13, { align: 'center' });
+
+    // Numune no + tarih sağ üst
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 255, 255);
+    doc.text(`No: ${tr(data.numuneNo)}   Tarih: ${new Date().toLocaleDateString('tr-TR')}`, PW - MR, 13, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+
+    // ─── BÖLÜM 1: GENEL BİLGİLER (2 sütunlu, sol + sağ) ────
+    let y = 20;
+    const colLabel = 28;  // etiket genislik sol
+    const colVal   = 42;  // deger genislik sol
+    const gap      = 5;   // iki sutun arasi
+    const colLabel2 = 28; // etiket genislik sag
+    const colVal2   = 43; // deger genislik sag
+    const leftX  = ML;
+    const rightX = ML + colLabel + colVal + gap;
+    const rowH   = 6;
+
+    // Bölüm başlığı
+    doc.setFillColor(220, 230, 255);
+    doc.rect(ML, y, CW, 5.5, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 64, 175);
+    doc.text('GENEL BILGILER / GENERAL INFORMATION', ML + 2, y + 3.8);
+    doc.setTextColor(0);
+    y += 6.5;
+
+    const drawRow = (lx: number, label: string, value: string, lw: number, vw: number, rowY: number) => {
+      doc.setFillColor(245, 247, 250);
+      doc.rect(lx, rowY, lw, rowH - 0.5, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(lx, rowY, lw, rowH - 0.5);
+      doc.rect(lx + lw, rowY, vw, rowH - 0.5);
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, lx + 1.5, rowY + 3.8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, lx + lw + 1.5, rowY + 3.8);
+    };
+
+    // Sol sütun alanları
+    const leftRows = [
+      ['Musteri Kodu',    tr(data.musteriKodu || data.musteri)],
+      ['Artikel No',      tr(data.musteriArtikelKodu || data.musteriArtikelNo)],
+      ['Marka',           tr(data.musteriMarkasi)],
+      ['Cinsiyet',        tr(data.cinsiyet)],
+      ['Corap Tipi',      tr(data.corapTipi)],
+      ['Corap Dokusu',    tr(data.corapDokusu)],
+      ['Igne / Kovan',    `${tr(data.igneSayisi)} / ${tr(data.kovanCapi)}`],
+      ['Corap Tanimi',    tr(data.corapTanimi)],
+      ['Durum',           tr(data.durum)],
+      ['Gonderim',        tr(data.gonderim || data.gonderimSekli)],
+    ];
+
+    // Sağ sütun alanları
+    const rightRows = [
+      ['Numune Tipi',     tr(data.numuneTipi)],
+      ['Sebep',           tr(data.numuneninSebebi)],
+      ['Yikama',          tr(data.yikama)],
+      ['Forma Bilgisi',   tr(data.formaBilgisi)],
+      ['Forma Sekli',     tr(data.formaSekli)],
+      ['Olcu Sekli',      tr(data.olcuSekli)],
+      ['Hedef Tarih',     tr(data.hedefTarih || data.termin)],
+      ['Desene Verilis',  tr(data.deseneVerilisTarihi)],
+      ['',                ''],
+      ['',                ''],
+    ];
+
+    const maxRows = Math.max(leftRows.length, rightRows.length);
+    for (let i = 0; i < maxRows; i++) {
+      const rowY = y + i * rowH;
+      if (leftRows[i]  && leftRows[i][0])  drawRow(leftX,  leftRows[i][0],  leftRows[i][1],  colLabel,  colVal,  rowY);
+      if (rightRows[i] && rightRows[i][0]) drawRow(rightX, rightRows[i][0], rightRows[i][1], colLabel2, colVal2, rowY);
+    }
+    y += maxRows * rowH + 4;
+
+    // ─── BÖLÜM 2: ÖLÇÜLER ───────────────────────────────────
+    const olculer = data.measurements || data.olculer || [];
+    doc.setFillColor(220, 230, 255);
+    doc.rect(ML, y, CW, 5.5, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 64, 175);
+    doc.text('OLCULER / MEASUREMENTS', ML + 2, y + 3.8);
+    doc.setTextColor(0);
+    y += 6.5;
+
     autoTable(doc, {
-      startY: 30,
-      head: [['FIELD / ALAN', 'VALUE / DEGER']],
-      body: [
-        ['Sample No (Numune No)', data.numuneNo || '-'],
-        ['Customer (Musteri)', data.musteriKodu || data.musteri || '-'],
-        ['Customer Art No (Musteri Artikel)', data.musteriArtikelKodu || data.musteriArtikelNo || '-'],
-        ['Brand (Marka)', data.musteriMarkasi || '-'],
-        ['Gender (Cinsiyet)', data.cinsiyet || '-'],
-        ['Type (Tip)', data.numuneTipi || '-'],
-        ['Reason (Sebep)', data.numuneninSebebi || '-'],
-        ['Status (Durum)', data.durum || '-'],
-        ['Shipping (Gonderim)', data.gonderim || data.gonderimSekli || '-'],
-        ['Target Date (Hedef Tarih)', data.hedefTarih || data.termin || '-'],
-        ['Sock Type (Corap Tipi)', data.corapTipi || '-'],
-        ['Texture (Doku)', data.corapDokusu || '-'],
-        ['Needle Count (Igne Sayisi)', data.igneSayisi || '-'],
-        ['Cylinder (Kovan Capi)', data.kovanCapi || '-'],
-      ],
+      startY: y,
+      margin: { left: ML, right: MR },
+      head: [[
+        'Beden', 'Renk', 'Mkt', 'Brm',
+        'Lst.Eni', 'Lst.Yuk', 'Kc.Eni', 'Ay.Eni',
+        'Kc.Boy', 'Tb.Boy', 'Lst.St', 'Kc/Ay.St', 'Tp.St', 'Bord'
+      ]],
+      body: olculer.length > 0 ? olculer.map(o => [
+        tr(o.bedenler || o.beden),
+        tr(o.renk),
+        String(o.miktar || 0),
+        tr(o.birim) || 'Cift',
+        tr(o.lastikEni),
+        tr(o.lastikYuksekligi),
+        tr(o.koncEni),
+        tr(o.ayakEni),
+        tr(o.koncBoyu),
+        tr(o.tabanBoyu),
+        tr(o.lastikStreci),
+        tr(o.koncStreciAyakStreci),
+        tr(o.topukStreci),
+        tr(o.bord),
+      ]) : [['Veri yok', '', '', '', '', '', '', '', '', '', '', '', '', '']],
       theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185] },
-      styles: { fontSize: 9 },
-      pageBreak: 'auto',
-      rowPageBreak: 'avoid'
+      headStyles: { fillColor: [34, 139, 87], fontStyle: 'bold', fontSize: 6.5, halign: 'center', cellPadding: 1.5 },
+      bodyStyles: { fontSize: 6.5, halign: 'center', cellPadding: 1.5 },
+      pageBreak: 'avoid',
     });
 
-    const olculer = data.measurements || data.olculer || [];
-    
-    if (olculer.length > 0) {
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 120,
-        head: [['Size (Beden)', 'Color (Renk)', 'Qty (Miktar)', 'Unit (Birim)', 'Cuff W (Lst.Eni)', 'Cuff H (Lst.Yuk.)']],
-        body: olculer.map(o => [
-          o.bedenler || o.beden || '-',
-          o.renk || '-',
-          String(o.miktar || 0),
-          o.birim || 'Cift',
-          o.lastikEni || '-',
-          o.lastikYuksekligi || '-'
-        ]),
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        styles: { fontSize: 9 },
-        pageBreak: 'auto',
-        rowPageBreak: 'avoid',
-        showHead: 'everyPage'
-      });
-    }
+    y = (doc as any).lastAutoTable?.finalY + 4;
+
+    // ─── BÖLÜM 3: İPLİK BİLGİLERİ ──────────────────────────
+    const iplikler = data.yarnInfo || [];
+    doc.setFillColor(220, 230, 255);
+    doc.rect(ML, y, CW, 5.5, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 64, 175);
+    doc.text('IPLIK BILGILERI / YARN INFORMATION', ML + 2, y + 3.8);
+    doc.setTextColor(0);
+    y += 6.5;
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: ML, right: MR },
+      head: [['Kullanim Yeri', 'Detay', 'Denye', 'Cins', 'Renk Kodu', 'Renk', 'Tedarikci', 'Not']],
+      body: iplikler.length > 0 ? iplikler.map(i => [
+        tr(i.kullanimYeri),
+        tr(i.detay),
+        tr(i.denye),
+        tr(i.cins),
+        tr(i.renkKodu),
+        tr(i.renk),
+        tr(i.tedarikci),
+        tr(i.not),
+      ]) : [['Veri yok', '', '', '', '', '', '', '']],
+      theme: 'grid',
+      headStyles: { fillColor: [109, 40, 217], fontStyle: 'bold', fontSize: 6.5, cellPadding: 1.5 },
+      bodyStyles: { fontSize: 6.5, cellPadding: 1.5 },
+      columnStyles: {
+        0: { cellWidth: 22, fontStyle: 'bold' },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 26 },
+        7: { cellWidth: 38 },
+      },
+      pageBreak: 'avoid',
+    });
+
+    // ─── İMZA SATIRLARI ─────────────────────────────────────
+    const sigY = (doc as any).lastAutoTable?.finalY + 5;
+    const sigLabels = [
+      'Desene Teslim Eden',
+      'Iplik Kontrol',
+      'Desende Teslim Alan',
+      'Kalite Kontrol',
+      'Ihracat Teslim Alan',
+    ];
+    const sigW = CW / sigLabels.length;
+    doc.setDrawColor(180, 180, 180);
+    sigLabels.forEach((lbl, i) => {
+      const sx = ML + i * sigW;
+      doc.setFillColor(245, 247, 250);
+      doc.rect(sx, sigY, sigW - 1, 5, 'F');
+      doc.rect(sx, sigY, sigW - 1, 5);
+      doc.setFontSize(5.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(80);
+      doc.text(tr(lbl), sx + (sigW - 1) / 2, sigY + 3.3, { align: 'center' });
+      // İmza alanı
+      doc.setFillColor(255, 255, 255);
+      doc.rect(sx, sigY + 5, sigW - 1, 10);
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(160);
+      doc.text('Tarih: ___/___/______', sx + 1, sigY + 13.5);
+    });
+    doc.setTextColor(0);
 
     return doc;
   };
@@ -259,35 +464,90 @@ Please find the PDF attached. / PDF ekte bulunmaktadir.`);
         </table>
 
         {/* OLCULER TABLOSU */}
-        <h3 className="font-bold mb-2 text-gray-700">Olculer (Measurements)</h3>
-        <table className="w-full border-collapse border border-gray-300 mb-6">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border text-left">Beden (Size)</th>
-              <th className="p-2 border text-left">Renk (Color)</th>
-              <th className="p-2 border text-left">Miktar (Qty)</th>
-              <th className="p-2 border text-left">Birim (Unit)</th>
-              <th className="p-2 border text-left">Lastik Eni</th>
-              <th className="p-2 border text-left">Lastik Yuk.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {olculer.length > 0 ? olculer.map((olcu, idx) => (
-              <tr key={idx} className="border-b">
-                <td className="p-2 border">{olcu.bedenler || olcu.beden || '-'}</td>
-                <td className="p-2 border">{olcu.renk || '-'}</td>
-                <td className="p-2 border">{olcu.miktar || 0}</td>
-                <td className="p-2 border">{olcu.birim || 'Cift'}</td>
-                <td className="p-2 border">{olcu.lastikEni || '-'}</td>
-                <td className="p-2 border">{olcu.lastikYuksekligi || '-'}</td>
-              </tr>
-            )) : (
+        <h3 className="font-bold mb-2 text-gray-700">Ölçüler (Measurements)</h3>
+        <div className="overflow-x-auto mb-6">
+          <table className="w-full border-collapse border border-gray-300 text-sm">
+            <thead className="bg-gray-100">
               <tr>
-                <td className="p-2 border text-center text-gray-500" colSpan={6}>Veri yok / No data</td>
+                <th className="p-2 border text-left whitespace-nowrap">Beden (Size)</th>
+                <th className="p-2 border text-left whitespace-nowrap">Renk (Color)</th>
+                <th className="p-2 border text-left whitespace-nowrap">Miktar (Qty)</th>
+                <th className="p-2 border text-left whitespace-nowrap">Birim (Unit)</th>
+                <th className="p-2 border text-left whitespace-nowrap">Lst.Eni</th>
+                <th className="p-2 border text-left whitespace-nowrap">Lst.Yük.</th>
+                <th className="p-2 border text-left whitespace-nowrap">Kç.Eni</th>
+                <th className="p-2 border text-left whitespace-nowrap">Ay.Eni</th>
+                <th className="p-2 border text-left whitespace-nowrap">Kç.Boy</th>
+                <th className="p-2 border text-left whitespace-nowrap">Tb.Boy</th>
+                <th className="p-2 border text-left whitespace-nowrap">Lst.St.</th>
+                <th className="p-2 border text-left whitespace-nowrap">Kç/Ay.St.</th>
+                <th className="p-2 border text-left whitespace-nowrap">Tp.St.</th>
+                <th className="p-2 border text-left whitespace-nowrap">Bord</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {olculer.length > 0 ? olculer.map((olcu, idx) => (
+                <tr key={idx} className="border-b hover:bg-gray-50">
+                  <td className="p-2 border">{olcu.bedenler || olcu.beden || '-'}</td>
+                  <td className="p-2 border">{olcu.renk || '-'}</td>
+                  <td className="p-2 border">{olcu.miktar || 0}</td>
+                  <td className="p-2 border">{olcu.birim || 'Çift'}</td>
+                  <td className="p-2 border">{olcu.lastikEni || '-'}</td>
+                  <td className="p-2 border">{olcu.lastikYuksekligi || '-'}</td>
+                  <td className="p-2 border">{olcu.koncEni || '-'}</td>
+                  <td className="p-2 border">{olcu.ayakEni || '-'}</td>
+                  <td className="p-2 border">{olcu.koncBoyu || '-'}</td>
+                  <td className="p-2 border">{olcu.tabanBoyu || '-'}</td>
+                  <td className="p-2 border">{olcu.lastikStreci || '-'}</td>
+                  <td className="p-2 border">{olcu.koncStreciAyakStreci || '-'}</td>
+                  <td className="p-2 border">{olcu.topukStreci || '-'}</td>
+                  <td className="p-2 border">{olcu.bord || '-'}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td className="p-2 border text-center text-gray-500" colSpan={14}>Veri yok / No data</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* İPLİK BİLGİLERİ TABLOSU */}
+        {data.yarnInfo && data.yarnInfo.length > 0 && (
+          <>
+            <h3 className="font-bold mb-2 text-gray-700">İplik Bilgileri (Yarn Information)</h3>
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full border-collapse border border-gray-300 text-sm">
+                <thead className="bg-purple-50">
+                  <tr>
+                    <th className="p-2 border text-left whitespace-nowrap">Kullanım Yeri</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Detay</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Denye</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Cins</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Renk Kodu</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Renk</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Tedarikçi</th>
+                    <th className="p-2 border text-left whitespace-nowrap">Not</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.yarnInfo.map((iplik, idx) => (
+                    <tr key={idx} className="border-b hover:bg-gray-50">
+                      <td className="p-2 border font-medium text-gray-700">{iplik.kullanimYeri || '-'}</td>
+                      <td className="p-2 border text-gray-600">{iplik.detay || '-'}</td>
+                      <td className="p-2 border">{iplik.denye || '-'}</td>
+                      <td className="p-2 border">{iplik.cins || '-'}</td>
+                      <td className="p-2 border">{iplik.renkKodu || '-'}</td>
+                      <td className="p-2 border">{iplik.renk || '-'}</td>
+                      <td className="p-2 border">{iplik.tedarikci || '-'}</td>
+                      <td className="p-2 border">{iplik.not || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
         {/* KAPAT BUTONU */}
         <div className="flex justify-end">

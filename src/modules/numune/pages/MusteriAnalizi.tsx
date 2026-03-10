@@ -121,7 +121,12 @@ export function MusteriAnalizi() {
       data = data.filter(n => n.termin <= filters.bitisTarihi);
     }
     if (filters.numuneTipi) {
-      data = data.filter(n => n.numuneTipi === filters.numuneTipi);
+      // YeniNumune value kodu (ILK_GELISTIRME) veya label (İlk Geliştirme) olabilir - ikisini de destekle
+      data = data.filter(n => {
+        if (!n.numuneTipi) return false;
+        const secilenOption = NUMUNE_TIPI_OPTIONS.find(o => o.value === filters.numuneTipi);
+        return n.numuneTipi === filters.numuneTipi || n.numuneTipi === secilenOption?.label;
+      });
     }
 
     // Apply sorting
@@ -207,7 +212,6 @@ export function MusteriAnalizi() {
   };
 
   const toggleMenu = (id: number) => {
-    console.log("Menu toggle:", id, "current:", openMenuId);
     if (openMenuId === id) {
       setOpenMenuId(null);
       setOpenSubMenu(null);

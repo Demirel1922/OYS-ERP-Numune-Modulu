@@ -195,7 +195,7 @@ export function YeniNumune() {
   const [activeTab, setActiveTab] = useState<'general' | 'measurements' | 'yarn'>('general');
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<Toast>({ show: false, message: '', type: 'success' });
-  const [status, setStatus] = useState<'TASLAK' | 'ONAYDA' | 'ONAYLI'>('TASLAK');
+  const [status, setStatus] = useState<'Taslak' | 'Beklemede' | 'Onayli'>('Taslak');
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -439,6 +439,11 @@ export function YeniNumune() {
     if (!validate()) return;
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 500));
+
+    // Yeni kayıtta sıra numarasını kaydet (Kaydet & Onayla ile aynı davranış)
+    if (formData.generalInfo.numuneNo && !isEditMode) {
+      saveSira(formData.generalInfo.numuneNo);
+    }
     
     const yeniNumune = {
       id: isEditMode ? editId : Date.now(),
@@ -446,7 +451,7 @@ export function YeniNumune() {
       musteri: formData.generalInfo.musteriKodu,
       musteriArtikelNo: formData.generalInfo.musteriArtikelKodu,
       refNo: '-',
-      durum: 'TASLAK',
+      durum: 'Taslak',
       termin: formData.generalInfo.hedefTarih,
       miktar: calculateTotalMiktar(),
       gonderim: '-',
@@ -468,7 +473,7 @@ export function YeniNumune() {
     }
     
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
-    setStatus('TASLAK');
+    setStatus('Taslak');
     localStorage.removeItem('yeniNumune_formData');
     localStorage.removeItem('yeniNumune_lastSaved');
     showToast(isEditMode ? 'Güncellendi' : 'Taslak olarak kaydedildi', 'success');
@@ -492,7 +497,7 @@ export function YeniNumune() {
       musteri: formData.generalInfo.musteriKodu,
       musteriArtikelNo: formData.generalInfo.musteriArtikelKodu,
       refNo: '-',
-      durum: 'ONAYDA',
+      durum: 'Beklemede',
       termin: formData.generalInfo.hedefTarih,
       miktar: calculateTotalMiktar(),
       gonderim: '-',
@@ -514,7 +519,7 @@ export function YeniNumune() {
     }
     
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
-    setStatus('ONAYDA');
+    setStatus('Beklemede');
     localStorage.removeItem('yeniNumune_formData');
     localStorage.removeItem('yeniNumune_lastSaved');
     showToast(isEditMode ? 'Güncellendi ve Onaylandı' : 'Kaydedildi ve Onaylandı', 'success');
@@ -525,9 +530,9 @@ export function YeniNumune() {
 
   const getStatusBadgeColor = () => {
     switch (status) {
-      case 'TASLAK': return 'bg-gray-100 text-gray-600';
-      case 'ONAYDA': return 'bg-yellow-100 text-yellow-700';
-      case 'ONAYLI': return 'bg-green-100 text-green-700';
+      case 'Taslak': return 'bg-gray-100 text-gray-600';
+      case 'Beklemede': return 'bg-yellow-100 text-yellow-700';
+      case 'Onayli': return 'bg-green-100 text-green-700';
     }
   };
 
