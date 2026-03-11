@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Eye, CheckCircle, Truck, X, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Search, Users, MoreVertical, Edit3, Trash2, ChevronRight, Eye, CheckCircle, Truck, X, Check, Settings } from 'lucide-react';
 import { NumuneDetayModal } from '../components/NumuneDetayModal';
+import { createFromNumune } from '../../uretim-hazirlik/utils/factory';
+import { STORAGE_KEY as UH_STORAGE_KEY } from '../../uretim-hazirlik/utils/calculations';
 
 interface NumuneItem {
   id: number;
@@ -122,6 +124,50 @@ export function NumuneTaleplerPage() {
       localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
       setNumuneler(yeniListe);
     }
+    setOpenMenuId(null);
+    setMenuPosition(null);
+  };
+
+  // ÜRETİM HAZIRLIĞA GÖNDER
+  const handleUretimHazirligaGonder = (id: number) => {
+    const numune = numuneler.find(n => n.id === id);
+    if (!numune) return;
+
+    // Duplicate kontrolü
+    const mevcutKayitlar = JSON.parse(localStorage.getItem(UH_STORAGE_KEY) || '[]');
+    const zatenVar = mevcutKayitlar.find((k: any) => k.numuneId === id);
+    if (zatenVar) {
+      showToast('Bu numune zaten Üretim Hazırlık\'a gönderilmiş!', 'error');
+      setOpenMenuId(null);
+      setMenuPosition(null);
+      return;
+    }
+
+    // Yeni üretim hazırlık kaydı oluştur - Numune formundaki ek verileri de al
+    const fullNumuneData = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]')
+      .find((n: any) => n.id === numune.id);
+    
+    const yeniKayit = createFromNumune({
+      id: numune.id,
+      numuneNo: numune.numuneNo,
+      musteri: numune.musteri,
+      musteriKodu: numune.musteriKodu,
+      musteriArtikelKodu: numune.musteriArtikelKodu || numune.musteriArtikelNo,
+      igneSayisi: fullNumuneData?.igneSayisi,
+      kovanCapi: fullNumuneData?.kovanCapi,
+      yikama: fullNumuneData?.yikama,
+      burunKapama: fullNumuneData?.burunKapama,
+      corapTanimi: fullNumuneData?.corapTanimi,
+      corapTipi: fullNumuneData?.corapTipi,
+      corapDokusu: fullNumuneData?.corapDokusu,
+    });
+
+    mevcutKayitlar.push(yeniKayit);
+    localStorage.setItem(UH_STORAGE_KEY, JSON.stringify(mevcutKayitlar));
+
+    // Numune durumunu güncelle
+    handleDurumChange(id, 'Üretimde');
+    showToast(`${numune.numuneNo} Üretim Hazırlık'a gönderildi`, 'success');
     setOpenMenuId(null);
     setMenuPosition(null);
   };
@@ -417,6 +463,15 @@ export function NumuneTaleplerPage() {
             </div>
 
             <hr className="my-2 mx-4" />
+
+            {/* Üretim Hazırlığa Gönder */}
+            <button 
+              onClick={() => handleUretimHazirligaGonder(openMenuId)}
+              className="w-full px-4 py-3 text-left hover:bg-green-50 text-green-700 flex items-center gap-3 text-sm whitespace-nowrap"
+            >
+              <Settings size={18} />
+              Üretim Hazırlığa Gönder
+            </button>
 
             {/* Düzenle */}
             <button 
