@@ -20,6 +20,7 @@ interface NumuneItem {
   gonderim: string;
   gonderimSekli?: string;
   numuneTipi?: string;
+  generalInfo?: any;
 }
 
 const mockData: NumuneItem[] = [
@@ -34,6 +35,8 @@ const mockData: NumuneItem[] = [
 const DURUM_OPTIONS = ['Taslak', 'Beklemede', 'Üretimde', 'Hazır', 'Gönderildi', 'Tamamlandı', 'İptal'];
 const GONDERIM_OPTIONS = ['Kargo', 'Elden', 'Kurye'];
 
+const MENU_HEIGHT = 320;
+
 export function NumuneTaleplerPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Aktif');
@@ -46,6 +49,7 @@ export function NumuneTaleplerPage() {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'success' });
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ show: true, message, type });
@@ -62,59 +66,63 @@ export function NumuneTaleplerPage() {
     }
   }, []);
 
-  // ESC tuşu ile menüyü kapat
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpenMenuId(null);
         setOpenSubMenu(null);
+        setMenuPosition(null);
       }
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
-  // DURUM DEGISTIRME - KESIN CALISMALI
+  useEffect(() => {
+    const handleScroll = () => {
+      if (openMenuId !== null) {
+        setOpenMenuId(null);
+        setOpenSubMenu(null);
+        setMenuPosition(null);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [openMenuId]);
+
+  const closeMenu = () => {
+    setOpenMenuId(null);
+    setOpenSubMenu(null);
+    setMenuPosition(null);
+  };
+
   const handleDurumChange = (id: number, yeniDurum: string) => {
     setNumuneler(prev => prev.map(n => n.id === id ? { ...n, durum: yeniDurum } : n));
-    
     const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
     const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, durum: yeniDurum, guncellemeTarihi: new Date().toISOString() } : n);
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
-    
     showToast(`Durum "${yeniDurum}" olarak güncellendi`, 'success');
-    setOpenMenuId(null);
-    setOpenSubMenu(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
-  // GONDERIM SEKLI DEGISTIRME
   const handleGonderimChange = (id: number, yeniGonderim: string) => {
     setNumuneler(prev => prev.map(n => n.id === id ? { ...n, gonderim: yeniGonderim, gonderimSekli: yeniGonderim } : n));
-    
     const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
     const yeniListe = liste.map((n: NumuneItem) => n.id === id ? { ...n, gonderim: yeniGonderim, gonderimSekli: yeniGonderim } : n);
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
-    
     showToast(`Gönderim "${yeniGonderim}" olarak güncellendi`, 'success');
-    setOpenMenuId(null);
-    setOpenSubMenu(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
-  // GORUNTULE (Modal Ac - Navigate YASAK)
   const openDetailModal = (id: number) => {
     setSelectedNumuneId(id);
     setModalOpen(true);
-    setOpenMenuId(null);
-    setOpenSubMenu(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
   const handleEdit = (id: number) => {
     navigate('/numune/yeni', { state: { editMode: true, numuneId: id } });
-    setOpenMenuId(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
   const handleDelete = (id: number) => {
@@ -124,71 +132,107 @@ export function NumuneTaleplerPage() {
       localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
       setNumuneler(yeniListe);
     }
-    setOpenMenuId(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
-  // ÜRETİM HAZIRLIĞA GÖNDER
   const handleUretimHazirligaGonder = (id: number) => {
     const numune = numuneler.find(n => n.id === id);
     if (!numune) return;
 
-    // Duplicate kontrolü
     const mevcutKayitlar = JSON.parse(localStorage.getItem(UH_STORAGE_KEY) || '[]');
     const zatenVar = mevcutKayitlar.find((k: any) => k.numuneId === id);
     if (zatenVar) {
       showToast('Bu numune zaten Üretim Hazırlık\'a gönderilmiş!', 'error');
-      setOpenMenuId(null);
-      setMenuPosition(null);
+      closeMenu();
       return;
     }
 
-    // Yeni üretim hazırlık kaydı oluştur - Numune formundaki ek verileri de al
+    // localStorage'dan tam veriyi al
     const fullNumuneData = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]')
       .find((n: any) => n.id === numune.id);
-    
+
+    // generalInfo altındaki verilere doğru erişim
+    const gi = fullNumuneData?.generalInfo;
+
     const yeniKayit = createFromNumune({
       id: numune.id,
       numuneNo: numune.numuneNo,
       musteri: numune.musteri,
-      musteriKodu: numune.musteriKodu,
-      musteriArtikelKodu: numune.musteriArtikelKodu || numune.musteriArtikelNo,
-      igneSayisi: fullNumuneData?.igneSayisi,
-      kovanCapi: fullNumuneData?.kovanCapi,
-      yikama: fullNumuneData?.yikama,
-      burunKapama: fullNumuneData?.burunKapama,
-      corapTanimi: fullNumuneData?.corapTanimi,
-      corapTipi: fullNumuneData?.corapTipi,
-      corapDokusu: fullNumuneData?.corapDokusu,
+      musteriKodu: gi?.musteriKodu || numune.musteriKodu || numune.musteri || '',
+      musteriArtikelKodu: gi?.musteriArtikelKodu || numune.musteriArtikelKodu || numune.musteriArtikelNo || '',
+      igneSayisi: gi?.igneSayisi || '',
+      kovanCapi: gi?.kovanCapi || '',
+      yikama: gi?.yikama || '',
+      burunKapama: gi?.burunKapama || '',
+      corapTanimi: gi?.corapTanimi || '',
+      corapTipi: gi?.corapTipi || '',
+      corapDokusu: gi?.corapDokusu || '',
+      formaBilgisi: gi?.formaBilgisi || '',
+      formaSekli: gi?.formaSekli || '',
+      olcuSekli: gi?.olcuSekli || '',
+      musteriMarkasi: gi?.musteriMarkasi || '',
     });
 
     mevcutKayitlar.push(yeniKayit);
     localStorage.setItem(UH_STORAGE_KEY, JSON.stringify(mevcutKayitlar));
 
-    // Numune durumunu güncelle
     handleDurumChange(id, 'Üretimde');
     showToast(`${numune.numuneNo} Üretim Hazırlık'a gönderildi`, 'success');
-    setOpenMenuId(null);
-    setMenuPosition(null);
+    closeMenu();
   };
 
   const toggleMenu = (id: number) => {
     if (openMenuId === id) {
-      setOpenMenuId(null);
-      setOpenSubMenu(null);
-      setMenuPosition(null);
+      closeMenu();
     } else {
       const button = buttonRefs.current.get(id);
       if (button) {
         const rect = button.getBoundingClientRect();
-        setMenuPosition({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX - 180 // Sola kaydır
-        });
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        let top: number;
+
+        if (spaceBelow >= MENU_HEIGHT) {
+          top = rect.bottom + 4;
+        } else if (spaceAbove >= MENU_HEIGHT) {
+          top = rect.top - MENU_HEIGHT - 4;
+        } else {
+          top = Math.max(8, (viewportHeight - MENU_HEIGHT) / 2);
+        }
+
+        let left = rect.right - 224;
+        if (left < 8) left = 8;
+
+        setMenuPosition({ top, left });
       }
       setOpenMenuId(id);
       setOpenSubMenu(null);
     }
+  };
+
+  const getSubMenuPosition = (itemIndex: number) => {
+    if (!menuPosition || !menuRef.current) return { top: 0, left: 0 };
+
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const itemTop = menuRect.top + (itemIndex * 45);
+
+    const subMenuHeight = openSubMenu === 'durum' ? DURUM_OPTIONS.length * 36 + 16 : GONDERIM_OPTIONS.length * 36 + 16;
+
+    let top = itemTop;
+    if (top + subMenuHeight > viewportHeight - 8) {
+      top = viewportHeight - subMenuHeight - 8;
+    }
+    if (top < 8) top = 8;
+
+    let left = menuRect.left - 168;
+    if (left < 8) {
+      left = menuRect.right + 4;
+    }
+
+    return { top, left };
   };
 
   const getDurumBadgeClass = (durum: string) => {
@@ -208,7 +252,6 @@ export function NumuneTaleplerPage() {
     const matchesSearch = n.numuneNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          n.musteri.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (n.musteriKodu && n.musteriKodu.toLowerCase().includes(searchTerm.toLowerCase()));
-    
     if (activeTab === 'Tümü') return matchesSearch;
     if (activeTab === 'Aktif') return matchesSearch && ['Taslak', 'Beklemede', 'Üretimde', 'Hazır'].includes(n.durum);
     if (activeTab === 'Gönderildi') return matchesSearch && n.durum === 'Gönderildi';
@@ -219,7 +262,6 @@ export function NumuneTaleplerPage() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Toast */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-[99999] px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-all ${
           toast.type === 'success' ? 'bg-green-600 text-white' :
@@ -232,7 +274,7 @@ export function NumuneTaleplerPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <button 
+            <button
               onClick={() => navigate('/numune')}
               className="text-sm text-gray-500 mb-2 flex items-center gap-1 hover:text-gray-700"
             >
@@ -242,13 +284,13 @@ export function NumuneTaleplerPage() {
             <p className="text-gray-500 mt-1">Tüm numune taleplerinizi yönetin</p>
           </div>
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => navigate('/numune/musteri-analizi')}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
             >
               <Users size={18} /> Müşteri Analizi
             </button>
-            <button 
+            <button
               onClick={() => navigate('/numune/yeni')}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
             >
@@ -288,7 +330,7 @@ export function NumuneTaleplerPage() {
             <option>Üretimde</option>
             <option>Hazır</option>
           </select>
-          <button 
+          <button
             onClick={() => console.log('Excel export triggered')}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
           >
@@ -330,8 +372,8 @@ export function NumuneTaleplerPage() {
                       {numune.durum}
                     </span>
                   </td>
-                  <td className="py-4 px-4 relative">
-                    <button 
+                  <td className="py-4 px-4">
+                    <button
                       ref={(el) => {
                         if (el) buttonRefs.current.set(numune.id, el);
                       }}
@@ -356,26 +398,19 @@ export function NumuneTaleplerPage() {
         </div>
       </div>
 
-      {/* FIXED POSITION MENU - Ekran dışına taşmaz */}
       {openMenuId !== null && menuPosition && (
         <>
-          {/* Overlay - dışına tıklayınca kapat */}
-          <div 
-            className="fixed inset-0 z-[9998]" 
-            onClick={() => {
-              setOpenMenuId(null);
-              setOpenSubMenu(null);
-              setMenuPosition(null);
-            }} 
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={closeMenu}
           />
-          
-          {/* Ana Menü - Fixed position */}
-          <div 
-            className="fixed z-[9999] w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
+
+          <div
+            ref={menuRef}
+            className="fixed z-[9999] w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 max-h-[90vh] overflow-y-auto"
             style={{ top: menuPosition.top, left: menuPosition.left }}
           >
-            {/* Görüntüle */}
-            <button 
+            <button
               onClick={() => openDetailModal(openMenuId)}
               className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm whitespace-nowrap"
             >
@@ -383,9 +418,8 @@ export function NumuneTaleplerPage() {
               Görüntüle
             </button>
 
-            {/* Durum Değiştir - Submenu */}
-            <div className="relative">
-              <button 
+            <div>
+              <button
                 onClick={() => setOpenSubMenu(openSubMenu === 'durum' ? null : 'durum')}
                 className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between text-sm whitespace-nowrap"
               >
@@ -393,17 +427,13 @@ export function NumuneTaleplerPage() {
                   <CheckCircle size={18} className="text-green-600" />
                   Durum Değiştir
                 </span>
-                <ChevronRight size={16} className={openSubMenu === 'durum' ? 'rotate-90' : ''} />
+                <ChevronRight size={16} className={`transition-transform ${openSubMenu === 'durum' ? 'rotate-90' : ''}`} />
               </button>
-              
-              {/* Submenu - Sola doğru açılan */}
+
               {openSubMenu === 'durum' && (
-                <div 
+                <div
                   className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
-                  style={{ 
-                    top: menuPosition.top + 45, 
-                    left: menuPosition.left - 165 
-                  }}
+                  style={getSubMenuPosition(1)}
                 >
                   {DURUM_OPTIONS.map(durum => {
                     const numune = numuneler.find(n => n.id === openMenuId);
@@ -423,9 +453,8 @@ export function NumuneTaleplerPage() {
               )}
             </div>
 
-            {/* Gönderim Şekli */}
-            <div className="relative">
-              <button 
+            <div>
+              <button
                 onClick={() => setOpenSubMenu(openSubMenu === 'gonderim' ? null : 'gonderim')}
                 className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between text-sm whitespace-nowrap"
               >
@@ -433,16 +462,13 @@ export function NumuneTaleplerPage() {
                   <Truck size={18} className="text-orange-600" />
                   Gönderim Şekli
                 </span>
-                <ChevronRight size={16} className={openSubMenu === 'gonderim' ? 'rotate-90' : ''} />
+                <ChevronRight size={16} className={`transition-transform ${openSubMenu === 'gonderim' ? 'rotate-90' : ''}`} />
               </button>
-              
+
               {openSubMenu === 'gonderim' && (
-                <div 
+                <div
                   className="fixed z-[10000] w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-2"
-                  style={{ 
-                    top: menuPosition.top + 90, 
-                    left: menuPosition.left - 165 
-                  }}
+                  style={getSubMenuPosition(2)}
                 >
                   {GONDERIM_OPTIONS.map(gonderim => {
                     const numune = numuneler.find(n => n.id === openMenuId);
@@ -464,8 +490,7 @@ export function NumuneTaleplerPage() {
 
             <hr className="my-2 mx-4" />
 
-            {/* Üretim Hazırlığa Gönder */}
-            <button 
+            <button
               onClick={() => handleUretimHazirligaGonder(openMenuId)}
               className="w-full px-4 py-3 text-left hover:bg-green-50 text-green-700 flex items-center gap-3 text-sm whitespace-nowrap"
             >
@@ -473,8 +498,7 @@ export function NumuneTaleplerPage() {
               Üretim Hazırlığa Gönder
             </button>
 
-            {/* Düzenle */}
-            <button 
+            <button
               onClick={() => handleEdit(openMenuId)}
               className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm whitespace-nowrap"
             >
@@ -482,8 +506,7 @@ export function NumuneTaleplerPage() {
               Düzenle
             </button>
 
-            {/* Sil */}
-            <button 
+            <button
               onClick={() => handleDelete(openMenuId)}
               className="w-full px-4 py-3 text-left hover:bg-red-50 text-red-600 flex items-center gap-3 text-sm whitespace-nowrap"
             >
@@ -494,10 +517,10 @@ export function NumuneTaleplerPage() {
         </>
       )}
 
-      <NumuneDetayModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        numuneId={selectedNumuneId} 
+      <NumuneDetayModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        numuneId={selectedNumuneId}
       />
     </div>
   );

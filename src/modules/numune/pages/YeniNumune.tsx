@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Save, CheckCircle, Plus, Trash2, Loader2, X, Check, Edit3 } from 'lucide-react';
+import {
+  MUSTERI_KODLARI, IGNE_SAYILARI, CAP_DEGERLERI, BOYLAR,
+} from '../../uretim-hazirlik/constants/lookups';
 
 interface MeasurementRow {
   id: number;
@@ -97,21 +100,17 @@ const CORAP_DOKUSU_OPTIONS = [
 const YIKAMA_OPTIONS = ['Var', 'Yok', 'Hafif', 'Sert'];
 const BIRIM_OPTIONS = ['Çift', 'Düzine', 'Adet'];
 
-// Numune No üretim fonksiyonu
 const generateNumuneNo = (cinsiyetKodu: string): string => {
   const yilHanesi = new Date().getFullYear().toString().slice(-1);
   const storedSira = localStorage.getItem('numune_sira') || 'A0';
-  
   let harf = storedSira.charAt(0);
   let sayi = parseInt(storedSira.slice(1));
-  
   sayi++;
   if (sayi > 9) {
     sayi = 1;
     harf = String.fromCharCode(harf.charCodeAt(0) + 1);
     if (harf > 'Z') harf = 'A';
   }
-  
   const yeniSira = `${harf}${sayi}`;
   return `${cinsiyetKodu}${yilHanesi}${yeniSira}`;
 };
@@ -121,7 +120,6 @@ const saveSira = (numuneNo: string) => {
   localStorage.setItem('numune_sira', sira);
 };
 
-// Sabit iplik satırları (Desen hariç)
 const getFixedYarnRows = (): YarnRow[] => [
   { id: 1, kullanimYeri: 'LASTİK', detay: 'Lastik Elastiği', denye: '', cins: '', renkKodu: '', renk: '', tedarikci: '', not: '', isFixed: true },
   { id: 2, kullanimYeri: 'LASTİK', detay: 'Lastik Zemin İpliği', denye: '', cins: '', renkKodu: '', renk: '', tedarikci: '', not: '', isFixed: true },
@@ -168,22 +166,11 @@ const initialFormData = {
     deseneVerilisTarihi: '',
     hedefTarih: ''
   },
-  measurements: [{ 
-    id: 1, 
-    bedenler: '', 
-    renk: '', 
-    lastikEni: '', 
-    lastikYuksekligi: '', 
-    koncEni: '', 
-    ayakEni: '', 
-    koncBoyu: '', 
-    tabanBoyu: '', 
-    lastikStreci: '', 
-    koncStreciAyakStreci: '', 
-    topukStreci: '', 
-    bord: '', 
-    miktar: 1, 
-    birim: 'Çift' 
+  measurements: [{
+    id: 1, bedenler: '', renk: '', lastikEni: '', lastikYuksekligi: '',
+    koncEni: '', ayakEni: '', koncBoyu: '', tabanBoyu: '',
+    lastikStreci: '', koncStreciAyakStreci: '', topukStreci: '', bord: '',
+    miktar: 1, birim: 'Çift'
   }] as MeasurementRow[],
   yarnInfo: [...getFixedYarnRows(), getInitialDesenRow(19, 1)] as YarnRow[],
   desenCount: 1
@@ -199,7 +186,6 @@ export function YeniNumune() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  
   const [formData, setFormData] = useState(initialFormData);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -207,12 +193,10 @@ export function YeniNumune() {
     setTimeout(() => setToast({ show: false, message: '', type }), 3000);
   }, []);
 
-  // Edit modu kontrolü
   useEffect(() => {
     if (location.state?.editMode && location.state?.numuneId) {
       setIsEditMode(true);
       setEditId(location.state.numuneId);
-      
       const liste = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
       const bulunan = liste.find((n: any) => n.id === location.state.numuneId);
       if (bulunan) {
@@ -229,7 +213,6 @@ export function YeniNumune() {
     }
   }, [location, showToast]);
 
-  // LocalStorage'dan yükleme (sadece yeni kayıt için)
   useEffect(() => {
     if (!isEditMode) {
       const saved = localStorage.getItem('yeniNumune_formData');
@@ -245,7 +228,6 @@ export function YeniNumune() {
     }
   }, [isEditMode, showToast]);
 
-  // Otomatik kaydetme (30 saniyede bir)
   useEffect(() => {
     const interval = setInterval(() => {
       localStorage.setItem('yeniNumune_formData', JSON.stringify(formData));
@@ -255,7 +237,6 @@ export function YeniNumune() {
     return () => clearInterval(interval);
   }, [formData]);
 
-  // Cinsiyet değişince Numune No güncelle
   useEffect(() => {
     if (formData.generalInfo.cinsiyet && !isEditMode) {
       const newNumuneNo = generateNumuneNo(formData.generalInfo.cinsiyet);
@@ -288,22 +269,11 @@ export function YeniNumune() {
     }
     setFormData(prev => ({
       ...prev,
-      measurements: [...prev.measurements, { 
-        id: Date.now(), 
-        bedenler: '', 
-        renk: '', 
-        lastikEni: '', 
-        lastikYuksekligi: '', 
-        koncEni: '', 
-        ayakEni: '', 
-        koncBoyu: '', 
-        tabanBoyu: '', 
-        lastikStreci: '', 
-        koncStreciAyakStreci: '', 
-        topukStreci: '', 
-        bord: '', 
-        miktar: 1, 
-        birim: 'Çift' 
+      measurements: [...prev.measurements, {
+        id: Date.now(), bedenler: '', renk: '', lastikEni: '', lastikYuksekligi: '',
+        koncEni: '', ayakEni: '', koncBoyu: '', tabanBoyu: '',
+        lastikStreci: '', koncStreciAyakStreci: '', topukStreci: '', bord: '',
+        miktar: 1, birim: 'Çift'
       }]
     }));
   };
@@ -354,19 +324,11 @@ export function YeniNumune() {
 
   const isGeneralInfoComplete = () => {
     const g = formData.generalInfo;
-    return g.cinsiyet?.trim() &&
-           g.numuneTipi?.trim() &&
-           g.sebep?.trim() &&
-           g.musteriKodu?.trim() &&
-           g.hedefTarih;
+    return g.cinsiyet?.trim() && g.numuneTipi?.trim() && g.sebep?.trim() && g.musteriKodu?.trim() && g.hedefTarih;
   };
 
   const hasValidMeasurement = () => {
-    return formData.measurements.some(row => 
-      row.bedenler?.trim() &&
-      row.renk?.trim() &&
-      row.miktar >= 1
-    );
+    return formData.measurements.some(row => row.bedenler?.trim() && row.renk?.trim() && row.miktar >= 1);
   };
 
   const canAccessMeasurements = isGeneralInfoComplete();
@@ -393,7 +355,7 @@ export function YeniNumune() {
     }
     if (tab === 'yarn') {
       if (!hasValidMeasurement()) {
-        showToast('Ölçüler sekmesinde en az bir satırda Beden, Renk ve Miktar girilmelidir', 'error');
+        showToast('Ölçüler sekmesinde en az bir satırda Boy, Renk ve Miktar girilmelidir', 'error');
         return;
       }
     }
@@ -407,19 +369,16 @@ export function YeniNumune() {
     if (!g.sebep?.trim()) { showToast('Numunenin Sebebi zorunludur', 'error'); return false; }
     if (!g.musteriKodu?.trim()) { showToast('Müşteri Kodu zorunludur', 'error'); return false; }
     if (!g.hedefTarih) { showToast('Hedef Tarih zorunludur', 'error'); return false; }
-    
     if (g.deseneVerilisTarihi && g.hedefTarih) {
       if (new Date(g.deseneVerilisTarihi) > new Date(g.hedefTarih)) {
         showToast('Desene veriliş tarihi, hedef tarihten sonra olamaz', 'error');
         return false;
       }
     }
-
     if (!hasValidMeasurement()) {
-      showToast('Ölçüler sekmesinde en az bir satırda Beden, Renk ve Miktar girilmelidir', 'error');
+      showToast('Ölçüler sekmesinde en az bir satırda Boy, Renk ve Miktar girilmelidir', 'error');
       return false;
     }
-
     const hasYarnData = formData.yarnInfo.some(
       row => row.denye?.trim() || row.cins?.trim() || row.renkKodu?.trim() ||
              row.renk?.trim() || row.tedarikci?.trim() || row.not?.trim()
@@ -439,12 +398,9 @@ export function YeniNumune() {
     if (!validate()) return;
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 500));
-
-    // Yeni kayıtta sıra numarasını kaydet (Kaydet & Onayla ile aynı davranış)
     if (formData.generalInfo.numuneNo && !isEditMode) {
       saveSira(formData.generalInfo.numuneNo);
     }
-    
     const yeniNumune = {
       id: isEditMode ? editId : Date.now(),
       numuneNo: formData.generalInfo.numuneNo,
@@ -462,23 +418,19 @@ export function YeniNumune() {
       desenCount: formData.desenCount,
       olusturmaTarihi: new Date().toISOString()
     };
-    
     const mevcutListe = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
     let yeniListe;
-    
     if (isEditMode) {
       yeniListe = mevcutListe.map((n: any) => n.id === editId ? yeniNumune : n);
     } else {
       yeniListe = [yeniNumune, ...mevcutListe];
     }
-    
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     setStatus('Taslak');
     localStorage.removeItem('yeniNumune_formData');
     localStorage.removeItem('yeniNumune_lastSaved');
     showToast(isEditMode ? 'Güncellendi' : 'Taslak olarak kaydedildi', 'success');
     setIsSaving(false);
-    
     navigate('/numune/talepler', { state: { refresh: true, timestamp: Date.now() } });
   };
 
@@ -486,11 +438,9 @@ export function YeniNumune() {
     if (!validate()) return;
     setIsSaving(true);
     await new Promise(r => setTimeout(r, 500));
-    
     if (formData.generalInfo.numuneNo && !isEditMode) {
       saveSira(formData.generalInfo.numuneNo);
     }
-    
     const yeniNumune = {
       id: isEditMode ? editId : Date.now(),
       numuneNo: formData.generalInfo.numuneNo,
@@ -508,23 +458,19 @@ export function YeniNumune() {
       desenCount: formData.desenCount,
       olusturmaTarihi: new Date().toISOString()
     };
-    
     const mevcutListe = JSON.parse(localStorage.getItem('oys_numune_listesi') || '[]');
     let yeniListe;
-    
     if (isEditMode) {
       yeniListe = mevcutListe.map((n: any) => n.id === editId ? yeniNumune : n);
     } else {
       yeniListe = [yeniNumune, ...mevcutListe];
     }
-    
     localStorage.setItem('oys_numune_listesi', JSON.stringify(yeniListe));
     setStatus('Beklemede');
     localStorage.removeItem('yeniNumune_formData');
     localStorage.removeItem('yeniNumune_lastSaved');
     showToast(isEditMode ? 'Güncellendi ve Onaylandı' : 'Kaydedildi ve Onaylandı', 'success');
     setIsSaving(false);
-    
     navigate('/numune/talepler', { state: { refresh: true, timestamp: Date.now() } });
   };
 
@@ -538,10 +484,9 @@ export function YeniNumune() {
 
   return (
     <div className="max-w-7xl mx-auto p-4">
-      {/* Toast */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
-          toast.type === 'success' ? 'bg-green-600 text-white' : 
+          toast.type === 'success' ? 'bg-green-600 text-white' :
           toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
         }`}>
           {toast.type === 'success' ? <Check size={18} /> : toast.type === 'error' ? <X size={18} /> : <Check size={18} />}
@@ -550,7 +495,6 @@ export function YeniNumune() {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        {/* Üst Bilgi */}
         <div className="flex justify-between items-start mb-4 border-b border-gray-200 pb-3">
           <div>
             <button onClick={() => navigate(-1)} className="text-sm text-gray-500 mb-1 flex items-center gap-1 hover:text-gray-700">
@@ -569,17 +513,16 @@ export function YeniNumune() {
               </span>
             )}
             <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 text-sm">
-              {isSaving ? <Loader2 size={14} className="animate-spin" /> : isEditMode ? <Edit3 size={14} /> : <Save size={14} />} 
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : isEditMode ? <Edit3 size={14} /> : <Save size={14} />}
               {isEditMode ? 'Güncelle' : 'Kaydet'}
             </button>
             <button onClick={handleSaveAndApprove} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">
-              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} 
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
               {isEditMode ? 'Güncelle & Onayla' : 'Kaydet & Onayla'}
             </button>
           </div>
         </div>
 
-        {/* Sekmeler */}
         <div className="flex border-b border-gray-200 mb-4">
           <button onClick={() => handleTabClick('general')} className={`px-3 py-1.5 text-sm font-medium transition-colors border-b-2 ${activeTab === 'general' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             Genel Bilgiler
@@ -592,10 +535,8 @@ export function YeniNumune() {
           </button>
         </div>
 
-        {/* Genel Bilgiler */}
         {activeTab === 'general' && (
           <div className="space-y-3">
-            {/* Satır 1-2: Numune No ve Cinsiyet */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numune No</label>
@@ -610,7 +551,6 @@ export function YeniNumune() {
               </div>
             </div>
 
-            {/* Satır 3-4: Numune Tipi ve Sebep */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numune Tipi *</label>
@@ -626,11 +566,13 @@ export function YeniNumune() {
               </div>
             </div>
 
-            {/* Satır 5: Müşteri Bilgileri (3'lü) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Kodu *</label>
-                <input type="text" value={formData.generalInfo.musteriKodu} onChange={(e) => handleGeneralChange('musteriKodu', e.target.value)} placeholder="Müşteri kodu" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
+                <select value={formData.generalInfo.musteriKodu} onChange={(e) => handleGeneralChange('musteriKodu', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
+                  <option value="">Seçiniz</option>
+                  {MUSTERI_KODLARI.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Artikel Kodu</label>
@@ -642,7 +584,6 @@ export function YeniNumune() {
               </div>
             </div>
 
-            {/* Satır 6-7: Çorap Tipi, Dokusu, İğne, Kovan */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tipi</label>
@@ -658,15 +599,20 @@ export function YeniNumune() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">İğne Sayısı</label>
-                <input type="number" value={formData.generalInfo.igneSayisi} onChange={(e) => handleGeneralChange('igneSayisi', e.target.value)} placeholder="örn: 168" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
+                <select value={formData.generalInfo.igneSayisi} onChange={(e) => handleGeneralChange('igneSayisi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
+                  <option value="">Seçiniz</option>
+                  {IGNE_SAYILARI.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kovan Çapı</label>
-                <input type="number" step="0.1" value={formData.generalInfo.kovanCapi} onChange={(e) => handleGeneralChange('kovanCapi', e.target.value)} placeholder="örn: 3.5" className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
+                <select value={formData.generalInfo.kovanCapi} onChange={(e) => handleGeneralChange('kovanCapi', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm">
+                  <option value="">Seçiniz</option>
+                  {CAP_DEGERLERI.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
               </div>
             </div>
 
-            {/* Satır 8: Forma Bilgisi ve Forma Şekli */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Forma Bilgisi</label>
@@ -678,7 +624,6 @@ export function YeniNumune() {
               </div>
             </div>
 
-            {/* Satır 9-10: Yıkama ve Ölçü Şekli */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Yıkama</label>
@@ -693,13 +638,11 @@ export function YeniNumune() {
               </div>
             </div>
 
-            {/* Satır 11: Çorap Tanımı */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Çorap Tanımı</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ürün Tanımı</label>
               <textarea value={formData.generalInfo.corapTanimi} onChange={(e) => handleGeneralChange('corapTanimi', e.target.value)} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm" />
             </div>
 
-            {/* Satır 12: Tarihler */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Desene Veriliş Tarihi</label>
@@ -713,13 +656,12 @@ export function YeniNumune() {
           </div>
         )}
 
-        {/* Ölçüler */}
         {activeTab === 'measurements' && (
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-base font-semibold">Ölçü Tablosu</h3>
               <button onClick={addMeasurementRow} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                <Plus size={14} /> Yeni Beden Ekle
+                <Plus size={14} /> Yeni Boy Ekle
               </button>
             </div>
             <div className="overflow-x-auto">
@@ -727,7 +669,7 @@ export function YeniNumune() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-10"></th>
-                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-20">Bedenler *</th>
+                    <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-24">Boy *</th>
                     <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Renk *</th>
                     <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Lst.Eni</th>
                     <th className="px-1.5 py-1.5 text-left font-medium text-gray-700 w-16">Lst.Yük.</th>
@@ -751,7 +693,12 @@ export function YeniNumune() {
                           <Trash2 size={14} />
                         </button>
                       </td>
-                      <td className="px-1 py-0.5"><input type="text" value={row.bedenler} onChange={(e) => handleMeasurementChange(idx, 'bedenler', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5">
+                        <select value={row.bedenler} onChange={(e) => handleMeasurementChange(idx, 'bedenler', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs">
+                          <option value="">Seçiniz</option>
+                          {BOYLAR.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </td>
                       <td className="px-1 py-0.5"><input type="text" value={row.renk} onChange={(e) => handleMeasurementChange(idx, 'renk', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
                       <td className="px-1 py-0.5"><input type="text" value={row.lastikEni} onChange={(e) => handleMeasurementChange(idx, 'lastikEni', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
                       <td className="px-1 py-0.5"><input type="text" value={row.lastikYuksekligi} onChange={(e) => handleMeasurementChange(idx, 'lastikYuksekligi', e.target.value)} placeholder="cm" className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
@@ -763,7 +710,7 @@ export function YeniNumune() {
                       <td className="px-1 py-0.5"><input type="text" value={row.koncStreciAyakStreci} onChange={(e) => handleMeasurementChange(idx, 'koncStreciAyakStreci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
                       <td className="px-1 py-0.5"><input type="text" value={row.topukStreci} onChange={(e) => handleMeasurementChange(idx, 'topukStreci', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
                       <td className="px-1 py-0.5"><input type="text" value={row.bord} onChange={(e) => handleMeasurementChange(idx, 'bord', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
-                      <td className="px-1 py-0.5"><input type="number" min={1} value={row.miktar} onChange={(e) => handleMeasurementChange(idx, 'miktar', parseInt(e.target.value) || 1)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
+                      <td className="px-1 py-0.5"><input type="text" inputMode="numeric" pattern="[0-9]*" value={row.miktar} onChange={(e) => handleMeasurementChange(idx, 'miktar', parseInt(e.target.value) || 1)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs" /></td>
                       <td className="px-1 py-0.5">
                         <select value={row.birim} onChange={(e) => handleMeasurementChange(idx, 'birim', e.target.value)} className="w-full border border-gray-300 rounded px-1.5 py-0.5 text-xs">
                           {BIRIM_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -777,14 +724,13 @@ export function YeniNumune() {
           </div>
         )}
 
-        {/* İplik Bilgileri */}
         {activeTab === 'yarn' && (
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-base font-semibold">İplik Bilgileri</h3>
-              <button 
-                onClick={addDesenRow} 
-                disabled={formData.desenCount >= 10} 
+              <button
+                onClick={addDesenRow}
+                disabled={formData.desenCount >= 10}
                 title={formData.desenCount >= 10 ? 'Maksimum 10 desen eklenebilir' : ''}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >

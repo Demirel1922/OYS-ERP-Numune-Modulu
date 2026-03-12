@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Save, CheckCircle2, Lock, Unlock, Printer, Trash2, FileDown,
+  ArrowLeft, Save, CheckCircle2, Lock, Unlock, Trash2, FileDown,
 } from 'lucide-react';
 import type {
   UretimHazirlikKaydi, IplikSatiri,
@@ -31,7 +31,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'onay', label: 'Onay & Kilitleme' },
 ];
 
-// === HELPER: Dropdown ===
 function LookupSelect({ value, onChange, options, placeholder, disabled, className }: {
   value: string; onChange: (v: string) => void; options: string[];
   placeholder?: string; disabled?: boolean; className?: string;
@@ -87,9 +86,6 @@ function FormField({ label, children, required }: { label: string; children: Rea
   );
 }
 
-// ============================================================
-// ANA DETAY SAYFASI
-// ============================================================
 export function UretimHazirlikDetayPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -104,14 +100,12 @@ export function UretimHazirlikDetayPage() {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   }, []);
 
-  // Yükle
   useEffect(() => {
     const all: UretimHazirlikKaydi[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     const found = all.find(k => k.id === id);
     if (found) setKayit(found);
   }, [id]);
 
-  // Kaydet (localStorage'a persist)
   const persist = useCallback((updated: UretimHazirlikKaydi) => {
     const all: UretimHazirlikKaydi[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     const idx = all.findIndex(k => k.id === updated.id);
@@ -120,13 +114,11 @@ export function UretimHazirlikDetayPage() {
     setKayit(updated);
   }, []);
 
-  // Ürün Kartı güncelleme
   const updateUrunKarti = useCallback((field: string, value: any) => {
     if (!kayit || isLocked) return;
     setKayit(prev => prev ? { ...prev, urunKarti: { ...prev.urunKarti, [field]: value } } : prev);
   }, [kayit, isLocked]);
 
-  // İplik satırı güncelle
   const updateIplik = useCallback((idx: number, field: keyof IplikSatiri, value: string) => {
     if (!kayit || isLocked) return;
     setKayit(prev => {
@@ -137,7 +129,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // İplik satırı ekle (max 40)
   const addIplikSatiri = useCallback(() => {
     if (!kayit || isLocked) return;
     if (kayit.urunKarti.iplikler.length >= MAX_IPLIK_ROW_COUNT) return;
@@ -154,7 +145,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // İplik satırı sil
   const removeIplikSatiri = useCallback((idx: number) => {
     if (!kayit || isLocked) return;
     if (kayit.urunKarti.iplikler.length <= 1) return;
@@ -165,7 +155,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // Ölçü satırı güncelle
   const updateOlcu = useCallback((idx: number, field: keyof OlcuSatiri, value: string) => {
     if (!kayit || isLocked) return;
     setKayit(prev => {
@@ -176,7 +165,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // Ölçü satırı ekle
   const addOlcuSatiri = useCallback(() => {
     if (!kayit || isLocked) return;
     setKayit(prev => {
@@ -192,7 +180,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // Gramaj satırı güncelle
   const updateGramajSatir = useCallback((idx: number, field: keyof GramajSatiri, value: string) => {
     if (!kayit || isLocked) return;
     setKayit(prev => {
@@ -204,7 +191,6 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // Yıkama güncelle
   const updateYikama = useCallback((field: string, value: any) => {
     if (!kayit || isLocked) return;
     setKayit(prev => prev ? { ...prev, yikama: { ...prev.yikama, [field]: value } } : prev);
@@ -220,19 +206,16 @@ export function UretimHazirlikDetayPage() {
     });
   }, [kayit, isLocked]);
 
-  // Forma güncelle
   const updateForma = useCallback((field: string, value: any) => {
     if (!kayit || isLocked) return;
     setKayit(prev => prev ? { ...prev, forma: { ...prev.forma, [field]: value } } : prev);
   }, [kayit, isLocked]);
 
-  // === ARA KAYDET ===
   const handleSave = useCallback(() => {
     if (!kayit || isLocked) return;
     const now = new Date().toISOString();
     let updated = { ...kayit, sonGuncellemeTarihi: now, sonGuncelleyen: 'Kullanıcı' };
 
-    // Ürün kartından gramaja senkronize et
     const gramajSatirlari = updated.gramaj.satirlar.map((gs, i) => {
       const iplik = updated.urunKarti.iplikler[i];
       if (iplik) {
@@ -247,7 +230,6 @@ export function UretimHazirlikDetayPage() {
       return gs;
     });
 
-    // Eksik gramaj satırları ekle
     while (gramajSatirlari.length < updated.urunKarti.iplikler.length) {
       gramajSatirlari.push(createEmptyGramajSatiri(gramajSatirlari.length + 1));
     }
@@ -260,7 +242,6 @@ export function UretimHazirlikDetayPage() {
       birCiftAgirligi: updated.urunKarti.ciftAgirligi,
     });
 
-    // Yıkama senkron
     updated.yikama = {
       ...updated.yikama,
       musteriKodu: updated.urunKarti.musteriKodu,
@@ -268,7 +249,6 @@ export function UretimHazirlikDetayPage() {
       ormeciArtikelNo: updated.urunKarti.ormeciArtikelKodu,
     };
 
-    // Yeni → Devam Eden
     if (updated.status === 'NEW') {
       updated.status = 'IN_PROGRESS';
       updated.loglar = [...updated.loglar, createLog('Kullanıcı', 'STATU_DEGISIM', 'Yeni → Devam Eden')];
@@ -280,7 +260,6 @@ export function UretimHazirlikDetayPage() {
     showToast('Kayıt başarıyla kaydedildi');
   }, [kayit, isLocked, persist, showToast]);
 
-  // === KAYDET VE ONAYLA ===
   const handleApprove = useCallback(() => {
     if (!kayit) return;
     const result = validateForApproval(kayit);
@@ -301,7 +280,6 @@ export function UretimHazirlikDetayPage() {
     showToast('Kayıt onaylandı ve kilitlendi');
   }, [kayit, persist, showToast]);
 
-  // === GERİ AÇ (Admin) ===
   const handleReopen = useCallback(() => {
     if (!kayit) return;
     const sebep = window.prompt('Geri açma nedeninizi yazın:');
@@ -332,7 +310,6 @@ export function UretimHazirlikDetayPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-[1500px]">
-      {/* Toast */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-[99999] px-4 py-3 rounded-lg shadow-lg text-white text-sm ${
           toast.type === 'success' ? 'bg-green-600' : toast.type === 'error' ? 'bg-red-600' : 'bg-blue-600'
@@ -341,7 +318,6 @@ export function UretimHazirlikDetayPage() {
         </div>
       )}
 
-      {/* Üst bar */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate('/uretim-hazirlik')} className="text-sm text-gray-500 flex items-center gap-1 hover:text-gray-700">
           <ArrowLeft size={16} /> Listeye Dön
@@ -365,7 +341,6 @@ export function UretimHazirlikDetayPage() {
         </div>
       </div>
 
-      {/* Sabit Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-6 text-sm">
@@ -391,7 +366,6 @@ export function UretimHazirlikDetayPage() {
         </div>
       </div>
 
-      {/* Sekme Navigasyon */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200 px-2 flex gap-0.5 overflow-x-auto">
           {TABS.map(tab => (
@@ -409,7 +383,6 @@ export function UretimHazirlikDetayPage() {
           ))}
         </div>
 
-        {/* Sekme İçerikleri */}
         <div className="p-4">
           {activeTab === 'urun' && <UrunHazirlikKartiTab kayit={kayit} locked={isLocked} updateField={updateUrunKarti} updateIplik={updateIplik} addIplik={addIplikSatiri} removeIplik={removeIplikSatiri} updateOlcu={updateOlcu} addOlcu={addOlcuSatiri} />}
           {activeTab === 'gramaj' && <GramajTab kayit={kayit} locked={isLocked} updateSatir={updateGramajSatir} />}
@@ -436,9 +409,23 @@ function UrunHazirlikKartiTab({ kayit, locked, updateField, updateIplik, addIpli
   addOlcu: () => void;
 }) {
   const k = kayit.urunKarti;
+
+  const handleUrunPdfView = async () => {
+    const { generateUrunKartiPdf } = await import('../../../utils/urunKartiPdf');
+    generateUrunKartiPdf(kayit);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header Bilgileri */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={handleUrunPdfView}
+          className="flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium"
+        >
+          <FileDown size={16} /> Ürün Kartı Görüntüle (PDF)
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FormField label="Ürün Tanımı" required>
           <FieldInput value={k.urunTanimi} onChange={v => updateField('urunTanimi', v)} disabled={locked} />
@@ -466,7 +453,7 @@ function UrunHazirlikKartiTab({ kayit, locked, updateField, updateIplik, addIpli
           <LookupSelect value={k.yikama} onChange={v => updateField('yikama', v)} options={YIKAMA_TIPLERI} disabled={locked} />
         </FormField>
         <FormField label="Üretim Zamanı (sn)">
-          <FieldInput value={k.uretimZamani} onChange={v => updateField('uretimZamani', v)} type="number" disabled={locked} />
+          <FieldInput value={k.uretimZamani} onChange={v => updateField('uretimZamani', v)} disabled={locked} placeholder="sn" />
         </FormField>
         <FormField label="İğne Sayısı">
           <LookupSelect value={k.igneSayisi} onChange={v => updateField('igneSayisi', v)} options={IGNE_SAYILARI} disabled={locked} />
@@ -484,11 +471,10 @@ function UrunHazirlikKartiTab({ kayit, locked, updateField, updateIplik, addIpli
           <FieldInput value={k.makinaNo} onChange={v => updateField('makinaNo', v)} disabled={locked} />
         </FormField>
         <FormField label="Çift Ağırlığı (gr)">
-          <FieldInput value={k.ciftAgirligi} onChange={v => updateField('ciftAgirligi', v)} type="number" disabled={locked} />
+          <FieldInput value={k.ciftAgirligi} onChange={v => updateField('ciftAgirligi', v)} disabled={locked} placeholder="gr" />
         </FormField>
       </div>
 
-      {/* İPLİK TABLOSU */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-700">
@@ -543,7 +529,6 @@ function UrunHazirlikKartiTab({ kayit, locked, updateField, updateIplik, addIpli
         </div>
       </div>
 
-      {/* ÖLÇÜLER TABLOSU */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-700">Makine Çıkış Ölçüleri</h3>
@@ -591,7 +576,6 @@ function UrunHazirlikKartiTab({ kayit, locked, updateField, updateIplik, addIpli
         </div>
       </div>
 
-      {/* NOT */}
       <FormField label="Not">
         <textarea value={k.not} onChange={e => updateField('not', e.target.value)} disabled={locked}
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm h-20 disabled:bg-gray-100" />
@@ -610,7 +594,6 @@ function GramajTab({ kayit, locked, updateSatir }: {
   const g = kayit.gramaj;
   return (
     <div className="space-y-4">
-      {/* Header bilgiler (KartelaArkası'ndan - readonly) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-gray-50 p-3 rounded-lg">
         <ReadonlyField label="Müşteri Kodu" value={kayit.urunKarti.musteriKodu} />
         <ReadonlyField label="Ürün Kodu" value={kayit.urunKarti.ormeciArtikelKodu} />
@@ -619,7 +602,6 @@ function GramajTab({ kayit, locked, updateSatir }: {
         <ReadonlyField label="Makina Türü" value={kayit.urunKarti.makinaModeli} />
       </div>
 
-      {/* Ağırlık tablosu */}
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="w-full text-xs">
           <thead>
@@ -668,7 +650,6 @@ function GramajTab({ kayit, locked, updateSatir }: {
         </table>
       </div>
 
-      {/* Alt hesaplar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-yellow-50/50 p-3 rounded-lg border border-yellow-100">
         <ReadonlyField label="Burun Dikişi" value={g.burunDikisi} />
         <ReadonlyField label="Yıkama" value={g.yikamaAgirlik} />
@@ -681,7 +662,7 @@ function GramajTab({ kayit, locked, updateSatir }: {
       </div>
 
       <FormField label="Not">
-        <textarea value={g.not} onChange={() => {/* gramaj not update */}} disabled={locked}
+        <textarea value={g.not} onChange={() => {}} disabled={locked}
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm h-16 disabled:bg-gray-100" />
       </FormField>
     </div>
@@ -699,7 +680,6 @@ function YikamaTab({ kayit, locked, updateField, updateAdim }: {
   const y = kayit.yikama;
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FormField label="Yıkama Yeri">
           <FieldInput value={y.yikamaYeri} onChange={v => updateField('yikamaYeri', v)} disabled={locked} />
@@ -717,7 +697,6 @@ function YikamaTab({ kayit, locked, updateField, updateAdim }: {
         </FormField>
       </div>
 
-      {/* Yıkama 6 adım tablosu */}
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Yıkama Adımları</h3>
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -767,7 +746,7 @@ function YikamaTab({ kayit, locked, updateField, updateAdim }: {
 }
 
 // ============================================================
-// SEKME 4: FORMA (conditional rendering)
+// SEKME 4: FORMA
 // ============================================================
 function FormaTab({ kayit, locked, updateField }: {
   kayit: UretimHazirlikKaydi; locked: boolean;
@@ -790,7 +769,6 @@ function FormaTab({ kayit, locked, updateField }: {
 
   const handleCesidiChange = (v: string) => {
     updateField('formaCesidi', v as FormaCesidi);
-    // Etiketleri güncelle
     if (v && FORMA_PARAMETRE_CONFIG[v]) {
       const cfg = FORMA_PARAMETRE_CONFIG[v];
       const etiketler = [cfg.etiket1, cfg.etiket2, cfg.etiket3, cfg.etiket4, cfg.etiket5, cfg.etiket6];
@@ -841,12 +819,12 @@ function FormaTab({ kayit, locked, updateField }: {
 }
 
 // ============================================================
-// SEKME 5: MAKİNA KARTI (salt okunur A5 özet + PDF)
+// SEKME 5: MAKİNA KARTI
 // ============================================================
 function MakinaKartiTab({ kayit }: { kayit: UretimHazirlikKaydi }) {
   const k = kayit.urunKarti;
 
-  const handlePdfDownload = async () => {
+  const handlePdfView = async () => {
     const { generateMakinaKartiPdf } = await import('../../../utils/makinaKartiPdf');
     generateMakinaKartiPdf(kayit);
   };
@@ -857,16 +835,10 @@ function MakinaKartiTab({ kayit }: { kayit: UretimHazirlikKaydi }) {
         <h3 className="text-sm font-semibold text-gray-700">Üretim Bilgi Formu (A5 Özet)</h3>
         <div className="flex items-center gap-2">
           <button
-            onClick={handlePdfDownload}
+            onClick={handlePdfView}
             className="flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium"
           >
             <FileDown size={16} /> Makina Kartı Görüntüle (PDF)
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 border border-gray-200 rounded"
-          >
-            <Printer size={14} /> Yazdır
           </button>
         </div>
       </div>
@@ -883,7 +855,6 @@ function MakinaKartiTab({ kayit }: { kayit: UretimHazirlikKaydi }) {
           <div><span className="text-gray-500">Tarih:</span> <strong>{k.numuneTarihi}</strong></div>
         </div>
 
-        {/* İplik tablosu */}
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 text-[10px]">
@@ -911,7 +882,6 @@ function MakinaKartiTab({ kayit }: { kayit: UretimHazirlikKaydi }) {
           </tbody>
         </table>
 
-        {/* Ölçüler */}
         <div className="text-[10px] font-semibold mt-2">ÖLÇÜLER</div>
         <table className="w-full border-collapse text-[10px]">
           <thead>
@@ -953,7 +923,6 @@ function OnayTab({ kayit, onSave, onApprove, onReopen }: {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* Validation durumu */}
       <div className={`p-4 rounded-lg border ${validation.valid ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
         <h3 className={`text-sm font-semibold mb-2 ${validation.valid ? 'text-green-800' : 'text-yellow-800'}`}>
           {validation.valid ? '✓ Tüm zorunlu alanlar dolu — onaya hazır' : '⚠ Eksik alanlar var'}
@@ -965,7 +934,6 @@ function OnayTab({ kayit, onSave, onApprove, onReopen }: {
         )}
       </div>
 
-      {/* Aksiyonlar */}
       <div className="space-y-3">
         {!isLocked && (
           <>
@@ -985,7 +953,6 @@ function OnayTab({ kayit, onSave, onApprove, onReopen }: {
         )}
       </div>
 
-      {/* Audit Log */}
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-2">İşlem Geçmişi</h3>
         <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-64 overflow-y-auto">

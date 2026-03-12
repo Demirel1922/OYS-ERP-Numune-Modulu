@@ -42,7 +42,6 @@ export function createEmptyYikamaAdimi(adim: number): YikamaAdimi {
 
 export function createEmptyUrunKarti(): UrunHazirlikKarti {
   const iplikler: IplikSatiri[] = [];
-  // İlk satır default: KONÇ TABAN İPLİĞİ + Kesik Elyaf
   const ilk = createEmptyIplikSatiri(1);
   ilk.iplikYeri = 'KONÇ TABAN İPLİĞİ';
   ilk.iplikCinsi = 'Kesik Elyaf';
@@ -102,9 +101,11 @@ export function createFromNumune(numune: {
   corapTanimi?: string; musteriMarkasi?: string;
 }): UretimHazirlikKaydi {
   const urunKarti = createEmptyUrunKarti();
+
   // Numuneden devir — tek kaynak prensibi
   urunKarti.musteriKodu = numune.musteriKodu || numune.musteri || '';
   urunKarti.musteriArtikelKodu = numune.musteriArtikelKodu || '';
+  urunKarti.ormeciArtikelKodu = numune.numuneNo || '';
   urunKarti.urunTanimi = numune.corapTanimi || '';
   if (numune.igneSayisi) urunKarti.igneSayisi = numune.igneSayisi;
   if (numune.kovanCapi) urunKarti.cap = numune.kovanCapi;
@@ -113,6 +114,7 @@ export function createFromNumune(numune: {
 
   const yikama = createEmptyYikama();
   yikama.musteriKodu = urunKarti.musteriKodu;
+  yikama.ormeciArtikelNo = urunKarti.ormeciArtikelKodu;
 
   const now = new Date().toISOString();
 
